@@ -16,3 +16,5 @@
 | 04 训练与微调 | Pretrain/SFT/LoRA/QLoRA/RLHF/DPO/GRPO、DeepSpeed ZeRO |
 | 05 多模态大模型 | ViT、CLIP、BLIP-2、LLaVA、Flamingo、Chameleon、GPT-4o、Qwen-Omni |
 | 06 工程实践 | 量化、Flash Attention、vLLM、部署、Tokenizer、数据工程、评测 |
+
+全部由 Claude Code 生成部署

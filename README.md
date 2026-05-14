@@ -16,5 +16,7 @@
 | 04 训练与微调 | Pretrain/SFT/LoRA/QLoRA/RLHF/DPO/GRPO、DeepSpeed ZeRO |
 | 05 多模态大模型 | ViT、CLIP、BLIP-2、LLaVA、Flamingo、Chameleon、GPT-4o、Qwen-Omni |
 | 06 工程实践 | 量化、Flash Attention、vLLM、部署、Tokenizer、数据工程、评测 |
+| 07 强化学习面试速查 | Policy Gradient→PPO演进、GRPO、RLHF全流程、DPO推导、算法对比 |
+| 08 VLM 算法知识与面经 | Visual Encoder、架构设计、对齐训练、分辨率策略、MoE、2025-2026最新进展 |
 
 全部由 Claude Code 生成部署

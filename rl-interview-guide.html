@@ -782,7 +782,7 @@ A = 0 → 和平均水平一样</div>
                 <div class="item"><span class="symbol">$c = \sum_{k=0}^{t-1}\gamma^k r_k$</span>过去的折扣奖励——在 $a_t$ 之前就已经确定，对 $a_t$ 的期望来说是常数（不管选什么 $a_t$，它都不变）</div>
                 <div class="item"><span class="symbol">关键一步</span>$\pi \cdot \dfrac{\nabla\pi}{\pi} = \nabla\pi$&thinsp;——这就是 $\log$ 消失的原因：期望自带的 $\pi$ 和 log-derivative 的分母 $\pi$ 恰好约掉</div>
                 <div class="item"><span class="symbol">$\sum_a \pi(a|s) = 1$</span>所有动作概率之和永远为 1，常数的梯度 = 0</div>
-                <div class="item"><span class="symbol">直觉</span>时刻 $t$ 的决策只能影响未来，不能改变过去。过去的奖励（含折扣）是"噪声"，去掉后方差更小</div>
+                <div class="item"><span class="symbol">直觉</span>时刻 $t$ 的决策只能影响未来，不能改变过去。$r_0, \ldots, r_{t-1}$ 都是和 $a_t$ 无关的常数，常数乘以 $\nabla\log\pi$ 的期望等于零（log-derivative + 概率归一化），所以过去奖励是"噪声"，去掉后方差更小</div>
             </div>
         </div>
 

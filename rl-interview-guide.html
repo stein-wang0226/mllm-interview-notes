@@ -836,10 +836,14 @@ A = 0 → 和平均水平一样</div>
     <p>需要证明减去 baseline 不改变梯度的期望值：</p>
     <div class="formula-box">
         <div class="label">证明 $\mathbb{E}[\nabla\log\pi \cdot b(s)] = 0$</div>
-        $$\mathbb{E}_{a \sim \pi}\left[\nabla_\theta\log\pi_\theta(a|s) \cdot b(s)\right] = b(s) \cdot \sum_a \nabla_\theta\pi_\theta(a|s)$$
+        <p>展开期望（和 Step 5 相同的手法）：</p>
+        $$\mathbb{E}_{a \sim \pi}\left[\nabla_\theta\log\pi_\theta(a|s) \cdot b(s)\right] = \sum_a \pi_\theta(a|s) \cdot \nabla_\theta\log\pi_\theta(a|s) \cdot b(s)$$
+        <p>代入 $\nabla\log\pi = \frac{\nabla\pi}{\pi}$ ，$\pi$ 约分：</p>
+        $$= \sum_a \cancel{\pi_\theta} \cdot \frac{\nabla_\theta\pi_\theta}{\cancel{\pi_\theta}} \cdot b(s) = b(s) \cdot \sum_a \nabla_\theta\pi_\theta(a|s)$$
+        <p>交换求和与梯度，利用概率归一化：</p>
         $$= b(s) \cdot \nabla_\theta \underbrace{\sum_a \pi_\theta(a|s)}_{=1} = b(s) \cdot \nabla_\theta 1 = 0$$
         <div class="formula-annotation">
-            <div class="item"><span class="symbol">关键步骤</span> $\nabla\log\pi = \frac{\nabla\pi}{\pi}$ ，所以 $\pi \cdot \nabla\log\pi = \nabla\pi$ 。求和后 $\sum_a \nabla\pi(a|s) = \nabla\sum_a\pi(a|s) = \nabla 1 = 0$</div>
+            <div class="item"><span class="symbol">关键步骤</span> $\pi \cdot \dfrac{\nabla\pi}{\pi} = \nabla\pi$ ——期望中的 $\pi$ 和 log-derivative 分母的 $\pi$ 约掉</div>
             <div class="item"><span class="symbol"> $b(s)$ 可以提出来</span>因为 $b(s)$ 只依赖状态，不依赖动作 $a$ ，对 $a$ 的期望来说是常数</div>
             <div class="item"><span class="symbol">结论</span>减去任何只依赖 $s$ 的函数都不改变梯度期望，但能降低方差</div>
         </div>

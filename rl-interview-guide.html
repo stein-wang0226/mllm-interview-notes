@@ -212,17 +212,19 @@
         }
 
         .formula-annotation .item {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
             margin-bottom: 6px;
+            line-height: 1.7;
         }
 
-        .formula-annotation .symbol {
-            flex-shrink: 0;
+        .formula-annotation .item > .symbol {
+            display: inline;
             font-weight: 600;
             color: var(--gray-900);
-            min-width: 100px;
+            margin-right: 8px;
+        }
+
+        .formula-annotation .item > .symbol::after {
+            content: "";
         }
 
         /* Insight/Warning boxes */

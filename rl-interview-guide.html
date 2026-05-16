@@ -1161,9 +1161,158 @@ A = 0 → 和平均水平一样</div>
             <div class="item"><span class="symbol">Actor $\pi_\theta$</span>策略网络——决定做什么动作。$A_t > 0$ 时增大该动作概率，$A_t < 0$ 时减小</div>
             <div class="item"><span class="symbol">Critic $V_\phi$</span>价值网络——评估状态好坏。训练目标：预测值 $V_\phi(s)$ 逼近真实回报 $G_t$</div>
             <div class="item"><span class="symbol">$A_t = G_t - V_\phi(s_t)$</span>Advantage 用 Critic 的输出来计算（替代未知的真实 $V$）</div>
-            <div class="item"><span class="symbol">为什么 Critic 用 MSE？</span>$V(s)$ 的定义是 $\mathbb{E}[G_t|s]$，最小化 $(V_\phi - G_t)^2$ 的期望，解恰好就是条件期望</div>
+            <div class="item"><span class="symbol">为什么 Critic 用 MSE？</span>$V(s)$ 的定义是 $\mathbb{E}[G_t|s]$，最小化 $(V_\phi - G_t)^2$ 的期望，解恰好就是条件期望（下方证明）</div>
         </div>
     </div>
+
+    <h4>为什么最小化 MSE 的解恰好是条件期望？</h4>
+    <p>这是一个基础但重要的数学结论。固定一个状态 $s$，我们要找一个值 $c$（即 $V_\phi(s)$ 应该输出的数），使预测误差最小：</p>
+
+    <div class="formula-box">
+        <div class="label">MSE → 条件期望 证明</div>
+        <p><strong>目标：</strong>最小化 $\mathbb{E}[(G_t - c)^2 \mid s_t = s]$，求最优的 $c$。</p>
+        <p><strong>Step 1：展开平方</strong></p>
+        $$\mathbb{E}[(G_t - c)^2] = \mathbb{E}[G_t^2] - 2c\,\mathbb{E}[G_t] + c^2$$
+
+        <p><strong>Step 2：</strong>这是关于 $c$ 的二次函数（$c^2$ 系数为正 → 开口朝上），对 $c$ 求导令其为零：</p>
+        $$\frac{d}{dc}\mathbb{E}[(G_t - c)^2] = -2\mathbb{E}[G_t] + 2c = 0$$
+
+        <p><strong>Step 3：解出最优值</strong></p>
+        $$c^* = \mathbb{E}[G_t \mid s_t = s] = V^\pi(s)$$
+
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">$c^* = \mathbb{E}[G_t|s]$</span>最优预测恰好是条件期望——也就是价值函数 $V^\pi(s)$ 的定义</div>
+            <div class="item"><span class="symbol">直觉</span>同一状态 $s$ 出发，每次走的轨迹不同，$G_t$ 每次不一样。要用一个固定的数"代表"这些不同的 $G_t$，MSE 最小的选择就是取平均值</div>
+            <div class="item"><span class="symbol">为什么不用 MAE？</span>如果用绝对值误差 $|V_\phi - G_t|$，最优解是条件<strong>中位数</strong>而非期望，那就不是 $V^\pi(s)$ 了</div>
+        </div>
+    </div>
+
+    <h4>Actor-Critic 训练流程</h4>
+    <p>两个网络<strong>同时训练、交替更新</strong>，共享同一批交互数据：</p>
+
+    <!-- Actor-Critic 训练流程图 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 620" style="width:100%;max-width:700px;margin:10px auto 24px;display:block;">
+      <defs>
+        <linearGradient id="gActor" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#1d4ed8"/>
+        </linearGradient>
+        <linearGradient id="gCritic" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f59e0b"/>
+          <stop offset="100%" stop-color="#d97706"/>
+        </linearGradient>
+        <linearGradient id="gEnv" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#10b981"/>
+          <stop offset="100%" stop-color="#059669"/>
+        </linearGradient>
+        <linearGradient id="gCalc" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#f8fafc"/>
+        </linearGradient>
+        <filter id="ds2" x="-2%" y="-2%" width="104%" height="108%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#1e3a5f" flood-opacity="0.07"/>
+        </filter>
+        <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#64748b"/>
+        </marker>
+        <marker id="arr2b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#3b82f6"/>
+        </marker>
+        <marker id="arr2o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#d97706"/>
+        </marker>
+      </defs>
+
+      <!-- background -->
+      <rect width="700" height="620" rx="18" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="350" y="34" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="system-ui,sans-serif" letter-spacing="0.5">Actor-Critic 训练流程</text>
+
+      <!-- ====== Row 1: Actor + Environment ====== -->
+      <!-- Actor box -->
+      <rect x="40" y="56" width="260" height="80" rx="14" fill="url(#gCalc)" stroke="#3b82f6" stroke-width="2" filter="url(#ds2)"/>
+      <rect x="40" y="56" width="6" height="80" rx="3" fill="url(#gActor)"/>
+      <text x="64" y="82" font-size="13" font-weight="800" fill="#1e40af" font-family="system-ui,sans-serif">Actor π_θ（策略网络）</text>
+      <text x="64" y="104" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">输入 s → 输出动作分布 → 采样 a</text>
+      <text x="64" y="122" font-size="10.5" fill="#64748b" font-family="system-ui,sans-serif">（学生：决定怎么做）</text>
+
+      <!-- Environment box -->
+      <rect x="400" y="56" width="260" height="80" rx="14" fill="url(#gCalc)" stroke="#10b981" stroke-width="2" filter="url(#ds2)"/>
+      <rect x="400" y="56" width="6" height="80" rx="3" fill="url(#gEnv)"/>
+      <text x="424" y="82" font-size="13" font-weight="800" fill="#065f46" font-family="system-ui,sans-serif">Environment 环境</text>
+      <text x="424" y="104" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">接收 a → 返回 (s', r, done)</text>
+      <text x="424" y="122" font-size="10.5" fill="#64748b" font-family="system-ui,sans-serif">（试卷：给出成绩）</text>
+
+      <!-- Arrow: Actor → Env -->
+      <line x1="300" y1="86" x2="395" y2="86" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <text x="348" y="80" text-anchor="middle" font-size="10" fill="#475569" font-family="system-ui,sans-serif">动作 a</text>
+
+      <!-- Arrow: Env → down to data -->
+      <line x1="530" y1="136" x2="530" y2="165" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- ====== Row 2: Collected Data ====== -->
+      <rect x="120" y="170" width="460" height="52" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" filter="url(#ds2)"/>
+      <text x="350" y="194" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="system-ui,sans-serif">采集数据：(s_t, a_t, r_t, s_{t+1}) × 多步</text>
+      <text x="350" y="212" text-anchor="middle" font-size="10.5" fill="#475569" font-family="system-ui,sans-serif">一条或多条轨迹的交互经验</text>
+
+      <!-- Arrow: data → split to both -->
+      <line x1="250" y1="222" x2="170" y2="258" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <line x1="450" y1="222" x2="530" y2="258" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- ====== Row 3: Critic Evaluate + Compute Advantage ====== -->
+      <!-- Critic box -->
+      <rect x="400" y="262" width="260" height="80" rx="14" fill="url(#gCalc)" stroke="#f59e0b" stroke-width="2" filter="url(#ds2)"/>
+      <rect x="400" y="262" width="6" height="80" rx="3" fill="url(#gCritic)"/>
+      <text x="424" y="288" font-size="13" font-weight="800" fill="#92400e" font-family="system-ui,sans-serif">Critic V_φ（价值网络）</text>
+      <text x="424" y="310" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">输入 s → 输出 V_φ(s)（状态评分）</text>
+      <text x="424" y="328" font-size="10.5" fill="#64748b" font-family="system-ui,sans-serif">（老师：评估当前局面好坏）</text>
+
+      <!-- Compute Advantage box -->
+      <rect x="40" y="262" width="260" height="80" rx="14" fill="#ede9fe" stroke="#a78bfa" stroke-width="1.5" filter="url(#ds2)"/>
+      <text x="170" y="292" text-anchor="middle" font-size="13" font-weight="800" fill="#5b21b6" font-family="system-ui,sans-serif">计算 Advantage</text>
+      <text x="170" y="314" text-anchor="middle" font-size="12" fill="#6d28d9" font-family="'Times New Roman',serif" font-style="italic">A_t = G_t − V_φ(s_t)</text>
+      <text x="170" y="332" text-anchor="middle" font-size="10.5" fill="#7c3aed" font-family="system-ui,sans-serif">"这个动作比平均水平好了多少"</text>
+
+      <!-- Arrow: Critic → Advantage (provide V_φ) -->
+      <line x1="395" y1="302" x2="305" y2="302" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2o)"/>
+      <text x="350" y="296" text-anchor="middle" font-size="9.5" fill="#92400e" font-family="system-ui,sans-serif">提供 V_φ(s)</text>
+
+      <!-- ====== Row 4: Two updates in parallel ====== -->
+      <!-- Arrow down from Advantage to Actor Update -->
+      <line x1="170" y1="342" x2="170" y2="388" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr2b)"/>
+
+      <!-- Arrow down from Critic to Critic Update -->
+      <line x1="530" y1="342" x2="530" y2="388" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr2o)"/>
+
+      <!-- Actor Update -->
+      <rect x="40" y="392" width="260" height="92" rx="14" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" filter="url(#ds2)"/>
+      <circle cx="66" cy="414" r="12" fill="url(#gActor)"/>
+      <text x="66" y="418" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">A</text>
+      <text x="86" y="418" font-size="12" font-weight="700" fill="#1e40af" font-family="system-ui,sans-serif">Actor 更新</text>
+      <text x="56" y="440" font-size="11" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">θ ← θ + α · ∇log π_θ(a|s) · A_t</text>
+      <text x="56" y="460" font-size="10" fill="#475569" font-family="system-ui,sans-serif">A &gt; 0：增大该动作概率</text>
+      <text x="56" y="474" font-size="10" fill="#475569" font-family="system-ui,sans-serif">A &lt; 0：减小该动作概率</text>
+
+      <!-- Critic Update -->
+      <rect x="400" y="392" width="260" height="92" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" filter="url(#ds2)"/>
+      <circle cx="426" cy="414" r="12" fill="url(#gCritic)"/>
+      <text x="426" y="418" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">C</text>
+      <text x="446" y="418" font-size="12" font-weight="700" fill="#92400e" font-family="system-ui,sans-serif">Critic 更新</text>
+      <text x="416" y="440" font-size="11" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">φ ← φ − α_c · ∇_φ(V_φ(s) − G_t)²</text>
+      <text x="416" y="460" font-size="10" fill="#475569" font-family="system-ui,sans-serif">让预测值 V_φ 逼近真实回报 G_t</text>
+      <text x="416" y="474" font-size="10" fill="#475569" font-family="system-ui,sans-serif">（MSE 最优解 = 条件期望 V^π）</text>
+
+      <!-- ====== Row 5: Loop back ====== -->
+      <!-- merge arrows down -->
+      <line x1="170" y1="484" x2="170" y2="520" stroke="#3b82f6" stroke-width="1.5"/>
+      <line x1="530" y1="484" x2="530" y2="520" stroke="#d97706" stroke-width="1.5"/>
+      <line x1="170" y1="520" x2="530" y2="520" stroke="#64748b" stroke-width="1.5"/>
+      <line x1="350" y1="520" x2="350" y2="542" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Loop box -->
+      <rect x="170" y="546" width="360" height="52" rx="12" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6,3"/>
+      <text x="350" y="570" text-anchor="middle" font-size="12" font-weight="700" fill="#334155" font-family="system-ui,sans-serif">↻ 回到 Actor 采新数据，重复上述流程</text>
+      <text x="350" y="588" text-anchor="middle" font-size="10.5" fill="#64748b" font-family="system-ui,sans-serif">两个网络在循环中互相促进：Critic 评分更准 → Actor 策略更好 → 数据质量更高</text>
+    </svg>
 
     <div class="box-analogy">
         <strong>考试类比：</strong>Actor 是学生（决定怎么答题），Critic 是老师（给答题表现打分）。学生根据老师的反馈调整答题策略，老师根据最终成绩修正自己的评分标准。两者互相促进。

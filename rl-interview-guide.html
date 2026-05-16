@@ -777,22 +777,22 @@ A = 0 → 和平均水平一样</div>
             $$= c \cdot \nabla_\theta \underbrace{\sum_a \pi_\theta(a|s_t)}_{= 1 \text{（概率归一化）}} = c \cdot \nabla_\theta\, 1 = c \cdot 0 = 0$$
 
             <div class="formula-annotation">
-                <div class="item"><span class="symbol">$c = \sum_{k=0}^{t-1}\gamma^k r_k$</span>过去的折扣奖励——在 $a_t$ 之前就已经确定，对 $a_t$ 的期望来说是常数（不管选什么 $a_t$ ，它都不变）</div>
-                <div class="item"><span class="symbol">关键一步</span> $\pi \cdot \dfrac{\nabla\pi}{\pi} = \nabla\pi$ ——这就是 $\log$ 消失的原因：期望自带的 $\pi$ 和 log-derivative 的分母 $\pi$ 恰好约掉</div>
+                <div class="item"><span class="symbol">$c = \sum_{k=0}^{t-1}\gamma^k r_k$</span>过去的折扣奖励——在 $a_t$ 之前就已经确定，对 $a_t$ 的期望来说是常数（不管选什么 $a_t$，它都不变）</div>
+                <div class="item"><span class="symbol">关键一步</span>$\pi \cdot \dfrac{\nabla\pi}{\pi} = \nabla\pi$&thinsp;——这就是 $\log$ 消失的原因：期望自带的 $\pi$ 和 log-derivative 的分母 $\pi$ 恰好约掉</div>
                 <div class="item"><span class="symbol">$\sum_a \pi(a|s) = 1$</span>所有动作概率之和永远为 1，常数的梯度 = 0</div>
                 <div class="item"><span class="symbol">直觉</span>时刻 $t$ 的决策只能影响未来，不能改变过去。过去的奖励（含折扣）是"噪声"，去掉后方差更小</div>
             </div>
         </div>
 
-        <p><strong>所以只剩下 $\gamma^t G_t$ ，得到最终公式：</strong></p>
+        <p><strong>所以只剩下 $\gamma^t G_t$，得到最终公式：</strong></p>
         <div class="formula-box highlight">
             <div class="label">REINFORCE 梯度公式（理论形式）</div>
             $$\nabla_\theta J = \mathbb{E}_{\tau \sim \pi_\theta}\left[\sum_{t=0}^{T-1} \gamma^t \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t\right]$$
             <div class="formula-annotation">
-                <div class="item"><span class="symbol"> $\gamma^t$ </span>时间步 $t$ 的"全局折扣"——越晚的时间步对目标函数贡献越小（因为 $J$ 是从时刻 0 开始算的）</div>
-                <div class="item"><span class="symbol"> $G_t = \sum_{k=0}^{T-t-1} \gamma^k r_{t+k}$ </span>从时刻 $t$ 起的"局部"折扣回报（从 $\gamma^0$ 重新计数）</div>
-                <div class="item"><span class="symbol"> $\gamma^t \cdot G_t$ </span>合在一起 $= \sum_{k=t}^{T-1}\gamma^k r_k$ ，就是 $R(\tau)$ 中时刻 $t$ 之后的那部分（绝对折扣）</div>
-                <div class="item"><span class="symbol"> $\nabla_\theta \log \pi_\theta(a_t|s_t)$ </span>"增大动作 $a_t$ 出现概率"的梯度方向</div>
+                <div class="item"><span class="symbol">$\gamma^t$</span>时间步 $t$ 的"全局折扣"——越晚的时间步对目标函数贡献越小（因为 $J$ 是从时刻 0 开始算的）</div>
+                <div class="item"><span class="symbol">$G_t = \sum_{k=0}^{T-t-1} \gamma^k r_{t+k}$</span>从时刻 $t$ 起的"局部"折扣回报（从 $\gamma^0$ 重新计数）</div>
+                <div class="item"><span class="symbol">$\gamma^t \cdot G_t$</span>合在一起 $= \sum_{k=t}^{T-1}\gamma^k r_k$，就是 $R(\tau)$ 中时刻 $t$ 之后的那部分（绝对折扣）</div>
+                <div class="item"><span class="symbol">$\nabla_\theta \log \pi_\theta(a_t|s_t)$</span>"增大动作 $a_t$ 出现概率"的梯度方向</div>
             </div>
         </div>
 
@@ -838,13 +838,13 @@ A = 0 → 和平均水平一样</div>
         <div class="label">证明 $\mathbb{E}[\nabla\log\pi \cdot b(s)] = 0$</div>
         <p>展开期望（和 Step 5 相同的手法）：</p>
         $$\mathbb{E}_{a \sim \pi}\left[\nabla_\theta\log\pi_\theta(a|s) \cdot b(s)\right] = \sum_a \pi_\theta(a|s) \cdot \nabla_\theta\log\pi_\theta(a|s) \cdot b(s)$$
-        <p>代入 $\nabla\log\pi = \frac{\nabla\pi}{\pi}$ ，$\pi$ 约分：</p>
+        <p>代入 $\nabla\log\pi = \frac{\nabla\pi}{\pi}$，$\pi$ 约分：</p>
         $$= \sum_a \cancel{\pi_\theta} \cdot \frac{\nabla_\theta\pi_\theta}{\cancel{\pi_\theta}} \cdot b(s) = b(s) \cdot \sum_a \nabla_\theta\pi_\theta(a|s)$$
         <p>交换求和与梯度，利用概率归一化：</p>
         $$= b(s) \cdot \nabla_\theta \underbrace{\sum_a \pi_\theta(a|s)}_{=1} = b(s) \cdot \nabla_\theta 1 = 0$$
         <div class="formula-annotation">
-            <div class="item"><span class="symbol">关键步骤</span> $\pi \cdot \dfrac{\nabla\pi}{\pi} = \nabla\pi$ ——期望中的 $\pi$ 和 log-derivative 分母的 $\pi$ 约掉</div>
-            <div class="item"><span class="symbol"> $b(s)$ 可以提出来</span>因为 $b(s)$ 只依赖状态，不依赖动作 $a$ ，对 $a$ 的期望来说是常数</div>
+            <div class="item"><span class="symbol">关键步骤</span>$\pi \cdot \dfrac{\nabla\pi}{\pi} = \nabla\pi$&thinsp;——期望中的 $\pi$ 和 log-derivative 分母的 $\pi$ 约掉</div>
+            <div class="item"><span class="symbol">$b(s)$ 可以提出来</span>因为 $b(s)$ 只依赖状态，不依赖动作 $a$，对 $a$ 的期望来说是常数</div>
             <div class="item"><span class="symbol">结论</span>减去任何只依赖 $s$ 的函数都不改变梯度期望，但能降低方差</div>
         </div>
     </div>

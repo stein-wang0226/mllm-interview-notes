@@ -784,15 +784,25 @@ A = 0 → 和平均水平一样</div>
             </div>
         </div>
 
-        <p><strong>所以只剩下 $G_t$，得到最终公式：</strong></p>
+        <p><strong>所以只剩下 $\gamma^t G_t$ ，得到最终公式：</strong></p>
         <div class="formula-box highlight">
-            <div class="label">REINFORCE 最终梯度公式</div>
-            $$\nabla_\theta J = \mathbb{E}_{\tau \sim \pi_\theta}\left[\sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t\right]$$
+            <div class="label">REINFORCE 梯度公式（理论形式）</div>
+            $$\nabla_\theta J = \mathbb{E}_{\tau \sim \pi_\theta}\left[\sum_{t=0}^{T-1} \gamma^t \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t\right]$$
             <div class="formula-annotation">
-                <div class="item"><span class="symbol">$\nabla_\theta \log \pi_\theta(a_t|s_t)$</span>"增大动作 $a_t$ 出现概率"的梯度方向。告诉参数往哪调能让这个动作更可能被选中</div>
-                <div class="item"><span class="symbol">$G_t = \sum_{t'=t}^{T-1} \gamma^{t'-t} r_{t'}$</span>从这步开始的未来累积回报（reward-to-go）。作为<strong>权重</strong>：回报高 → 大力增大该动作概率</div>
-                <div class="item"><span class="symbol">$\mathbb{E}_{\tau \sim \pi_\theta}[\cdots]$</span>在当前策略下采样多条轨迹取平均（实操中用 $N$ 条轨迹的均值近似）</div>
-                <div class="item"><span class="symbol">$\sum_t$</span>对轨迹中每一步都做这件事</div>
+                <div class="item"><span class="symbol"> $\gamma^t$ </span>时间步 $t$ 的"全局折扣"——越晚的时间步对目标函数贡献越小（因为 $J$ 是从时刻 0 开始算的）</div>
+                <div class="item"><span class="symbol"> $G_t = \sum_{k=0}^{T-t-1} \gamma^k r_{t+k}$ </span>从时刻 $t$ 起的"局部"折扣回报（从 $\gamma^0$ 重新计数）</div>
+                <div class="item"><span class="symbol"> $\gamma^t \cdot G_t$ </span>合在一起 $= \sum_{k=t}^{T-1}\gamma^k r_k$ ，就是 $R(\tau)$ 中时刻 $t$ 之后的那部分（绝对折扣）</div>
+                <div class="item"><span class="symbol"> $\nabla_\theta \log \pi_\theta(a_t|s_t)$ </span>"增大动作 $a_t$ 出现概率"的梯度方向</div>
+            </div>
+        </div>
+
+        <div class="formula-box">
+            <div class="label">REINFORCE 梯度公式（实践形式，更常见）</div>
+            $$\nabla_\theta J \approx \mathbb{E}_{\tau \sim \pi_\theta}\left[\sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t\right]$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">区别</span>去掉了 $\gamma^t$ 前缀</div>
+                <div class="item"><span class="symbol">为什么可以省？</span> $\gamma^t$ 只是给不同时间步加了权重（早期时间步权重大、晚期小）。去掉它不改变梯度方向（最优策略不变），只改变各时间步的相对学习速率</div>
+                <div class="item"><span class="symbol">实际效果</span>去掉 $\gamma^t$ 后，晚期时间步也能得到充分学习，训练更稳定。大多数实现和教材使用这个版本</div>
             </div>
         </div>
     </div>

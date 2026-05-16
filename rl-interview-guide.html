@@ -474,6 +474,7 @@
         <li><a href="#pg-to-ppo">策略梯度到 PPO 演进</a></li>
         <li><a href="#ppo-detail">PPO 完全详解</a></li>
         <li><a href="#grpo">GRPO 详解</a></li>
+        <li><a href="#rlvr">RLVR 范式详解</a></li>
         <li><a href="#rlhf">RLHF 完整流程</a></li>
         <li><a href="#dpo">DPO 公式推导</a></li>
         <li><a href="#reward">Reward 设计方法论</a></li>
@@ -659,24 +660,127 @@ A = 0 → 和平均水平一样</div>
     <!-- REINFORCE -->
     <h3>Step 1: REINFORCE</h3>
 
-    <h4>目标</h4>
-    <p>找到参数 $\theta$，使策略 $\pi_\theta$ 的期望总回报 $J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta}[R(\tau)]$ 最大。</p>
-
-    <h4>核心推导：Log-Derivative Trick</h4>
-    <p>轨迹的概率为：</p>
-    <div class="formula-box">
-        $$P(\tau|\theta) = p(s_0) \prod_{t=0}^{T-1} \underbrace{\pi_\theta(a_t|s_t)}_{\text{策略（和 }\theta\text{ 有关）}} \cdot \underbrace{p(s_{t+1}|s_t,a_t)}_{\text{环境动力学（和 }\theta\text{ 无关）}}$$
-    </div>
-    <p>取 log 再对 $\theta$ 求导，环境动力学项消失，只剩策略部分：</p>
-
-    <div class="formula-box highlight">
-        <div class="label">REINFORCE 梯度公式</div>
-        $$\nabla_\theta J = \mathbb{E}_{\tau \sim \pi_\theta}\left[\sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t\right]$$
+    <h4>目标函数</h4>
+    <p>整个 RL 要优化的东西——策略的<strong>期望总回报</strong>：</p>
+    <div class="formula-box key">
+        <div class="label">目标函数定义</div>
+        $$J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta}[R(\tau)] = \int P(\tau|\theta) \cdot R(\tau) \, d\tau$$
         <div class="formula-annotation">
-            <div class="item"><span class="symbol">$\nabla_\theta \log \pi_\theta(a_t|s_t)$</span>"增大动作 $a_t$ 出现概率"的梯度方向。告诉参数往哪调能让这个动作更可能被选中</div>
-            <div class="item"><span class="symbol">$G_t$</span>从这步开始的累积回报。作为<strong>权重</strong>：回报高 → 大力增大该动作概率；回报低 → 轻微增大甚至反向</div>
-            <div class="item"><span class="symbol">$\mathbb{E}_{\tau \sim \pi_\theta}[\cdots]$</span>在当前策略下采样多条轨迹取平均</div>
-            <div class="item"><span class="symbol">$\sum_t$</span>对轨迹中每一步都做这件事</div>
+            <div class="item"><span class="symbol">$J(\theta)$</span>策略 $\pi_\theta$ 的"平均成绩"——按当前策略玩很多局，所有局回报的平均值</div>
+            <div class="item"><span class="symbol">$\tau \sim \pi_\theta$</span>按策略 $\pi_\theta$ 采样一条轨迹</div>
+            <div class="item"><span class="symbol">$R(\tau)$</span>这条轨迹的总回报</div>
+            <div class="item"><span class="symbol">$P(\tau|\theta)$</span>这条轨迹在策略 $\theta$ 下出现的概率</div>
+            <div class="item"><span class="symbol">$\int \cdots d\tau$</span>对所有可能的轨迹求积分（离散情况下是求和）</div>
+            <div class="item"><span class="symbol">优化方向</span>$J(\theta)$ 越大越好，我们要做<strong>梯度上升</strong>：$\theta \leftarrow \theta + \alpha \nabla_\theta J$</div>
+        </div>
+    </div>
+
+    <h4>核心问题</h4>
+    <p>怎么算 $\nabla_\theta J$？直接求导遇到障碍：$R(\tau)$ 来自环境（黑盒），和 $\theta$ 之间没有显式可微关系。我们不能像监督学习那样直接反向传播。</p>
+
+    <h4>完整推导（5 步）</h4>
+
+    <div class="step-card">
+        <div class="step-number">1</div>
+        <h4 style="padding-top:8px">写出梯度的积分形式</h4>
+        <div class="formula-box">
+            $$\nabla_\theta J = \nabla_\theta \int P(\tau|\theta) \cdot R(\tau) \, d\tau = \int \nabla_\theta P(\tau|\theta) \cdot R(\tau) \, d\tau$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">交换 $\nabla$ 和 $\int$</span>把梯度挪到积分里面（正则条件下可交换）</div>
+                <div class="item"><span class="symbol">问题</span>$\nabla_\theta P(\tau|\theta)$ 不好算——我们没法对环境转移概率求导</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-card">
+        <div class="step-number">2</div>
+        <h4 style="padding-top:8px">Log-Derivative Trick（最关键的一步）</h4>
+        <p>利用恒等式 $\nabla f = f \cdot \nabla \log f$（来自 $\frac{d}{dx}\log f = \frac{1}{f}\frac{df}{dx}$）：</p>
+        <div class="formula-box highlight">
+            $$\nabla_\theta P(\tau|\theta) = P(\tau|\theta) \cdot \nabla_\theta \log P(\tau|\theta)$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">效果</span>把"对概率求导"变成了"概率 × 对 log 概率求导"</div>
+                <div class="item"><span class="symbol">好处</span>代入积分后，$P(\tau|\theta)$ 变成了采样权重——可以用蒙特卡洛近似！</div>
+            </div>
+        </div>
+        <p>代入 Step 1：</p>
+        <div class="formula-box">
+            $$\nabla_\theta J = \int P(\tau|\theta) \cdot \nabla_\theta \log P(\tau|\theta) \cdot R(\tau) \, d\tau = \mathbb{E}_{\tau \sim \pi_\theta}\left[\nabla_\theta \log P(\tau|\theta) \cdot R(\tau)\right]$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">$\int P(\tau) \cdot [\cdots] \, d\tau$</span>这就是期望的定义！所以可以写成 $\mathbb{E}_\tau[\cdots]$</div>
+                <div class="item"><span class="symbol">实操意义</span>采样 $N$ 条轨迹，算每条的 $\nabla\log P \cdot R$，取平均，就得到梯度近似</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-card">
+        <div class="step-number">3</div>
+        <h4 style="padding-top:8px">展开 $\log P(\tau|\theta)$，消除环境项</h4>
+        <p>轨迹的概率为：</p>
+        <div class="formula-box">
+            $$P(\tau|\theta) = p(s_0) \prod_{t=0}^{T-1} \underbrace{\pi_\theta(a_t|s_t)}_{\text{策略（和 }\theta\text{ 有关）}} \cdot \underbrace{p(s_{t+1}|s_t,a_t)}_{\text{环境动力学（和 }\theta\text{ 无关）}}$$
+        </div>
+        <p>取 log（乘积变求和）：</p>
+        <div class="formula-box">
+            $$\log P(\tau|\theta) = \underbrace{\log p(s_0)}_{\text{与 }\theta\text{ 无关}} + \sum_t \log \pi_\theta(a_t|s_t) + \underbrace{\sum_t \log p(s_{t+1}|s_t,a_t)}_{\text{与 }\theta\text{ 无关}}$$
+        </div>
+        <p>对 $\theta$ 求梯度，第一项和第三项为零：</p>
+        <div class="formula-box key">
+            $$\nabla_\theta \log P(\tau|\theta) = \sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t|s_t)$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">关键结论</span>环境动力学完全消掉了！梯度只依赖策略本身，不需要知道环境模型</div>
+                <div class="item"><span class="symbol">$\nabla_\theta \log \pi_\theta(a_t|s_t)$</span>score function——"让动作 $a_t$ 概率增大"的参数调整方向</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-card">
+        <div class="step-number">4</div>
+        <h4 style="padding-top:8px">代入得到初始版本</h4>
+        <div class="formula-box">
+            $$\nabla_\theta J = \mathbb{E}_\tau\left[\left(\sum_{t=0}^{T-1} \nabla_\theta \log\pi_\theta(a_t|s_t)\right) \cdot R(\tau)\right]$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">$R(\tau)$</span>整条轨迹的总回报，作为所有时间步共享的权重</div>
+                <div class="item"><span class="symbol">问题</span>时刻 $t$ 的动作不应该为它之前的奖励"负责"——但 $R(\tau)$ 包含了 $t$ 之前的 $r_0, r_1, \ldots$</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-card">
+        <div class="step-number">5</div>
+        <h4 style="padding-top:8px">Reward-to-go 优化：$R(\tau) \to G_t$</h4>
+        <p>Step 4 中每个时间步都乘以整条轨迹的 $R(\tau)$，但 $R(\tau)$ 包含了时刻 $t$ 之前的奖励——这些和 $a_t$ 的选择无关。下面证明可以去掉它们：</p>
+
+        <p><strong>拆分 $R(\tau)$：</strong></p>
+        <div class="formula-box">
+            $$R(\tau) = \underbrace{(r_0 + \cdots + r_{t-1})}_{\text{过去奖励（和 }a_t\text{ 无关）}} + \underbrace{(r_t + \cdots + r_{T-1})}_{= \; G_t\text{（未来奖励）}}$$
+        </div>
+
+        <p><strong>代入时刻 $t$ 的梯度项：</strong></p>
+        <div class="formula-box">
+            $$\mathbb{E}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot R(\tau)\right] = \underbrace{\mathbb{E}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot (r_0{+}\cdots{+}r_{t-1})\right]}_{= \; 0} + \mathbb{E}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot G_t\right]$$
+        </div>
+
+        <p><strong>为什么第一项 = 0？</strong></p>
+        <div class="formula-box">
+            $$\mathbb{E}_{a_t \sim \pi}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot c\right] = c \cdot \nabla_\theta \underbrace{\sum_a \pi_\theta(a|s_t)}_{= 1 \text{（概率归一化）}} = c \cdot 0 = 0$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">$c$</span>过去的奖励 $r_0,\ldots,r_{t-1}$ 在 $a_t$ 之前就确定了，对 $a_t$ 的期望来说是常数</div>
+                <div class="item"><span class="symbol">$\sum_a \pi(a|s) = 1$</span>所有动作概率之和永远为 1，对 1 求导 = 0</div>
+                <div class="item"><span class="symbol">直觉</span>时刻 $t$ 的决策只能影响未来，不能改变过去。过去的奖励是"噪声"，去掉后方差更小</div>
+            </div>
+        </div>
+
+        <p><strong>所以只剩下 $G_t$，得到最终公式：</strong></p>
+        <div class="formula-box highlight">
+            <div class="label">REINFORCE 最终梯度公式</div>
+            $$\nabla_\theta J = \mathbb{E}_{\tau \sim \pi_\theta}\left[\sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t\right]$$
+            <div class="formula-annotation">
+                <div class="item"><span class="symbol">$\nabla_\theta \log \pi_\theta(a_t|s_t)$</span>"增大动作 $a_t$ 出现概率"的梯度方向。告诉参数往哪调能让这个动作更可能被选中</div>
+                <div class="item"><span class="symbol">$G_t = \sum_{t'=t}^{T-1} \gamma^{t'-t} r_{t'}$</span>从这步开始的未来累积回报（reward-to-go）。作为<strong>权重</strong>：回报高 → 大力增大该动作概率</div>
+                <div class="item"><span class="symbol">$\mathbb{E}_{\tau \sim \pi_\theta}[\cdots]$</span>在当前策略下采样多条轨迹取平均（实操中用 $N$ 条轨迹的均值近似）</div>
+                <div class="item"><span class="symbol">$\sum_t$</span>对轨迹中每一步都做这件事</div>
+            </div>
         </div>
     </div>
 
@@ -702,11 +806,23 @@ A = 0 → 和平均水平一样</div>
         $$\nabla_\theta J = \mathbb{E}\left[\sum_t \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot \underbrace{(G_t - b(s_t))}_{\text{有正有负，方差更小}}\right]$$
         <div class="formula-annotation">
             <div class="item"><span class="symbol">$b(s_t)$</span>基准值——"这个状态平均能拿多少分"。减去它让信号有正有负</div>
-            <div class="item"><span class="symbol">为什么可以减？</span>$\mathbb{E}_a[\nabla\log\pi \cdot b(s)] = 0$（可证明），不改变梯度期望，只降方差</div>
         </div>
     </div>
 
-    <p><strong>最佳 Baseline：状态价值函数 $V(s_t)$</strong></p>
+    <h4>为什么可以减？（证明）</h4>
+    <p>需要证明减去 baseline 不改变梯度的期望值：</p>
+    <div class="formula-box">
+        <div class="label">证明 $\mathbb{E}[\nabla\log\pi \cdot b(s)] = 0$</div>
+        $$\mathbb{E}_{a \sim \pi}\left[\nabla_\theta\log\pi_\theta(a|s) \cdot b(s)\right] = b(s) \cdot \sum_a \nabla_\theta\pi_\theta(a|s)$$
+        $$= b(s) \cdot \nabla_\theta \underbrace{\sum_a \pi_\theta(a|s)}_{=1} = b(s) \cdot \nabla_\theta 1 = 0$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">关键步骤</span>$\nabla\log\pi = \frac{\nabla\pi}{\pi}$，所以 $\pi \cdot \nabla\log\pi = \nabla\pi$。求和后 $\sum_a \nabla\pi(a|s) = \nabla\sum_a\pi(a|s) = \nabla 1 = 0$</div>
+            <div class="item"><span class="symbol">$b(s)$ 可以提出来</span>因为 $b(s)$ 只依赖状态，不依赖动作 $a$，对 $a$ 的期望来说是常数</div>
+            <div class="item"><span class="symbol">结论</span>减去任何只依赖 $s$ 的函数都不改变梯度期望，但能降低方差</div>
+        </div>
+    </div>
+
+    <p><strong>最佳 Baseline：状态价值函数 $V(s_t)$</strong>——理论可证明，$b(s) = V(s)$ 时方差最小。</p>
 
     <div class="formula-box key">
         <div class="label">Advantage 函数</div>
@@ -729,16 +845,22 @@ A = 0 → 和平均水平一样</div>
     <p>$V(s_t)$ 是未知的，需要估计。</p>
 
     <h4>做法</h4>
-    <p>训练一个神经网络 $V_\phi(s)$（Critic）来近似真实的 $V(s)$。</p>
+    <p>训练一个神经网络 $V_\phi(s)$（Critic）来近似真实的 $V(s)$。两个网络协同工作：</p>
 
     <div class="formula-box">
         <div class="label">Actor-Critic 双网络</div>
-        $$\text{Actor 损失: } L_{actor} = -\mathbb{E}\left[\log\pi_\theta(a_t|s_t) \cdot A_t\right]$$
-        $$\text{Critic 损失: } L_{critic} = \mathbb{E}\left[(V_\phi(s_t) - G_t)^2\right]$$
+        $$\text{Actor 更新: } \theta \leftarrow \theta + \alpha \cdot \nabla_\theta\log\pi_\theta(a_t|s_t) \cdot A_t$$
+        $$\text{Critic 更新: } \phi \leftarrow \phi - \alpha_c \cdot \nabla_\phi(V_\phi(s_t) - G_t)^2$$
         <div class="formula-annotation">
-            <div class="item"><span class="symbol">Actor $\pi_\theta$</span>策略网络——决定做什么动作。梯度方向：好动作增大概率，坏动作减小概率</div>
-            <div class="item"><span class="symbol">Critic $V_\phi$</span>价值网络——评估状态好坏。训练目标：让预测值 $V_\phi(s)$ 接近真实回报 $G_t$</div>
+            <div class="item"><span class="symbol">Actor $\pi_\theta$</span>策略网络——决定做什么动作。$A_t > 0$ 时增大该动作概率，$A_t < 0$ 时减小</div>
+            <div class="item"><span class="symbol">Critic $V_\phi$</span>价值网络——评估状态好坏。训练目标：预测值 $V_\phi(s)$ 逼近真实回报 $G_t$</div>
+            <div class="item"><span class="symbol">$A_t = G_t - V_\phi(s_t)$</span>Advantage 用 Critic 的输出来计算（替代未知的真实 $V$）</div>
+            <div class="item"><span class="symbol">为什么 Critic 用 MSE？</span>$V(s)$ 的定义是 $\mathbb{E}[G_t|s]$，最小化 $(V_\phi - G_t)^2$ 的期望，解恰好就是条件期望</div>
         </div>
+    </div>
+
+    <div class="box-analogy">
+        <strong>考试类比：</strong>Actor 是学生（决定怎么答题），Critic 是老师（给答题表现打分）。学生根据老师的反馈调整答题策略，老师根据最终成绩修正自己的评分标准。两者互相促进。
     </div>
 
     <div class="box-warning">
@@ -755,15 +877,26 @@ A = 0 → 和平均水平一样</div>
     <p>不在参数空间限制步长，而在<strong>策略分布空间</strong>限制——新旧策略的 KL 散度不能超过 $\delta$。</p>
 
     <h4>前置：重要性采样（Importance Sampling）</h4>
-    <p>用旧策略采的数据来评估新策略的好坏：</p>
+    <p>REINFORCE 每次更新后必须扔掉数据重新采样（on-policy），非常浪费。能不能用旧策略采的数据来评估新策略？</p>
 
     <div class="formula-box">
-        <div class="label">重要性采样目标</div>
-        $$J(\theta) \approx \mathbb{E}_{(s,a) \sim \pi_{\theta_{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{old}}(a|s)} \cdot A^{\pi_{\theta_{old}}}(s,a)\right]$$
+        <div class="label">重要性采样推导</div>
+        <p>从策略梯度出发：</p>
+        $$\nabla_\theta J = \mathbb{E}_{a \sim \pi_\theta}\left[\nabla_\theta\log\pi_\theta(a|s) \cdot A^\pi(s,a)\right]$$
+        <p>我们想用旧策略 $\pi_{\theta_{old}}$ 采的数据来估计这个期望。重要性采样公式：</p>
+        $$\mathbb{E}_{a \sim \pi_\theta}[f(a)] = \mathbb{E}_{a \sim \pi_{\theta_{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{old}}(a|s)} \cdot f(a)\right]$$
+        <p>代入策略梯度，并利用 $\nabla_\theta\log\pi_\theta = \frac{\nabla_\theta\pi_\theta}{\pi_\theta}$，整理后得到：</p>
+        $$J(\theta) - J(\theta_{old}) \approx \mathbb{E}_{(s,a) \sim \pi_{\theta_{old}}}\left[\frac{\pi_\theta(a|s)}{\pi_{\theta_{old}}(a|s)} \cdot A^{\pi_{\theta_{old}}}(s,a)\right]$$
         <div class="formula-annotation">
-            <div class="item"><span class="symbol">$\frac{\pi_\theta(a|s)}{\pi_{\theta_{old}}(a|s)}$</span>概率比——修正因子。因为数据是旧策略采的，要用新/旧概率比来"校正"</div>
+            <div class="item"><span class="symbol">$\frac{\pi_\theta(a|s)}{\pi_{\theta_{old}}(a|s)}$</span>概率比——修正因子。数据是旧策略采的，新旧概率比用来"校正"分布差异</div>
             <div class="item"><span class="symbol">$A^{\pi_{\theta_{old}}}$</span>在旧策略下计算的 advantage</div>
+            <div class="item"><span class="symbol">直觉</span>新策略比旧策略更喜欢做好动作（$A>0$时增大概率比）→ 目标增大 → 策略改进</div>
+            <div class="item"><span class="symbol">近似条件</span>$\pi_\theta$ 和 $\pi_{\theta_{old}}$ 不能差太远，否则重要性采样的方差会爆炸</div>
         </div>
+    </div>
+
+    <div class="box-insight">
+        重要性采样解决了"数据复用"问题：不用每次更新都重新采轨迹。但引入了新问题——如果新旧策略差距太大，概率比 $\frac{\pi_\theta}{\pi_{old}}$ 会变得非常大或非常小，导致估计不可靠。这正是 TRPO/PPO 要解决的。
     </div>
 
     <div class="formula-box highlight">
@@ -778,6 +911,20 @@ A = 0 → 和平均水平一样</div>
 
     <div class="box-insight">
         TRPO 说的是："你可以改进策略，但每一步只能在旧策略的<strong>信任域</strong>（trust region）内移动。" 就像走迷宫时每步只能走一小格，确保不会一步踏入死胡同。
+    </div>
+
+    <h4>为什么约束 KL 散度而不约束参数步长？</h4>
+    <div class="formula-box">
+        <div class="label">参数空间 vs 策略分布空间</div>
+        <p>参数空间限制 $\|\theta - \theta_{old}\| \leq \epsilon$ 的问题：</p>
+        $$\text{同样的} \Delta\theta \longrightarrow \begin{cases} \text{softmax 饱和区：概率几乎不变} \\ \text{softmax 线性区：概率剧烈变化} \end{cases}$$
+        <p>KL 散度直接衡量"策略行为变了多少"：</p>
+        $$D_{KL}(\pi_{old}\|\pi_\theta) = \sum_a \pi_{old}(a|s)\log\frac{\pi_{old}(a|s)}{\pi_\theta(a|s)}$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">核心问题</span>参数到概率的映射是非线性的（softmax）。参数空间的"一小步"可能在某些状态导致概率崩塌</div>
+            <div class="item"><span class="symbol">TRPO 的洞察</span>我们真正关心的是"策略的行为变了多少"，而不是"参数改了多少"</div>
+            <div class="item"><span class="symbol">理论保证</span>Kakade & Langford 2002 证明：如果 $D_{KL} \leq \delta$，则新策略的性能下降有<strong>理论上界</strong>——不会崩溃</div>
+        </div>
     </div>
 
     <div class="box-warning">
@@ -800,6 +947,21 @@ A = 0 → 和平均水平一样</div>
 
     <div class="box-insight">
         PPO 的哲学：不需要精确计算"新旧策略差了多远"（KL 散度），直接暴力截断——概率比超过 $1\pm\epsilon$ 就不让你继续动了。粗暴但有效，一阶优化器（Adam）就够用。
+    </div>
+
+    <h4>min() 为什么能实现信任域效果？（形式化分析）</h4>
+    <div class="formula-box">
+        <div class="label">分情况展开 min 的效果</div>
+        <p><strong>当 $A_t > 0$（好动作）：</strong></p>
+        $$L = \min(r_t \cdot A_t, \;\text{clip}(r_t, 1{-}\epsilon, 1{+}\epsilon)\cdot A_t)$$
+        $$= \begin{cases} r_t \cdot A_t & \text{if } r_t \leq 1+\epsilon \quad (\text{正常学习：梯度} = A_t \cdot \nabla r_t) \\ (1+\epsilon) \cdot A_t & \text{if } r_t > 1+\epsilon \quad (\text{梯度为 0，停止增大}) \end{cases}$$
+        <p><strong>当 $A_t < 0$（坏动作）：</strong></p>
+        $$L = \begin{cases} r_t \cdot A_t & \text{if } r_t \geq 1-\epsilon \quad (\text{正常学习：梯度} = A_t \cdot \nabla r_t) \\ (1-\epsilon) \cdot A_t & \text{if } r_t < 1-\epsilon \quad (\text{梯度为 0，停止减小}) \end{cases}$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">关键：min 的作用</span>当 $A_t > 0$ 时，clip 后的值 ≤ 原值，min 取的是 clip 后的（更小=更保守）。当 $A_t < 0$ 时，min 取的也是更小的那个（绝对值更大的惩罚）</div>
+            <div class="item"><span class="symbol">不对称性</span>min 只阻止"过度乐观"的更新，不阻止"回退"。即：如果一个本以为好的动作（$A>0$），概率已经被大幅降低（$r_t < 1-\epsilon$），PPO 不会阻止继续降低——因为这是在修正之前的错误</div>
+            <div class="item"><span class="symbol">vs TRPO</span>TRPO 精确计算 KL 散度再约束；PPO 的 clip 是一个<strong>下界近似</strong>——只要概率比在 $[1-\epsilon, 1+\epsilon]$ 内，KL 散度也一定很小</div>
+        </div>
     </div>
 </section>
 
@@ -867,6 +1029,21 @@ A = 0 → 和平均水平一样</div>
             <div class="item"><span class="symbol">$\lambda = 0$</span>只看当前一步的 TD 误差 → 偏差高、方差低（相信 Critic 的估计）</div>
             <div class="item"><span class="symbol">$\lambda = 1$</span>看到轨迹结束 → 偏差低、方差高（相信真实回报）</div>
             <div class="item"><span class="symbol">$\lambda = 0.95$</span>常用折中值</div>
+        </div>
+    </div>
+
+    <h4>GAE 公式的推导来源</h4>
+    <p>定义 $n$-步 advantage 估计：</p>
+    <div class="formula-box">
+        $$\hat{A}_t^{(n)} = \sum_{l=0}^{n-1}\gamma^l r_{t+l} + \gamma^n V(s_{t+n}) - V(s_t) = \sum_{l=0}^{n-1}\gamma^l\delta_{t+l}$$
+        <p>$n=1$ 时只看一步（低方差、高偏差）；$n=T$ 时看完整轨迹（低偏差、高方差）。</p>
+        <p>GAE 是所有 $n$-步估计的<strong>指数加权平均</strong>：</p>
+        $$\hat{A}_t^{GAE} = (1-\lambda)\left[\hat{A}_t^{(1)} + \lambda\hat{A}_t^{(2)} + \lambda^2\hat{A}_t^{(3)} + \cdots\right]$$
+        <p>展开化简后得到 $\sum_{l=0}^{\infty}(\gamma\lambda)^l\delta_{t+l}$。</p>
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">原理</span>和 TD($\lambda$) 一样：$\lambda$ 控制"短视 vs 远视"的权衡</div>
+            <div class="item"><span class="symbol">$\lambda$ 小</span>主要使用 1-step 估计，依赖 $V$ 的准确性（高偏差、低方差）</div>
+            <div class="item"><span class="symbol">$\lambda$ 大</span>更多使用 Monte Carlo 信号（低偏差、高方差）</div>
         </div>
     </div>
 
@@ -978,6 +1155,29 @@ A = 0 → 和平均水平一样</div>
         <strong>考试类比：</strong>同一道题让模型答 64 遍，有的答对有的答错。答对的属于"好回答"（$\hat{A}>0$），答错的属于"差回答"（$\hat{A}<0$）。然后用 PPO 的方式加强好回答、削弱差回答。全程不需要另一个模型来评估"这道题有多难"——组内平均分本身就是 baseline。
     </div>
 
+    <h4>为什么 Group Mean 能替代 Critic？（理论连接）</h4>
+    <div class="formula-box">
+        <div class="label">GRPO Baseline 的合理性</div>
+        <p>回顾 Step 2 证明：减去任何与动作无关的常数 $b$，都不改变梯度期望。</p>
+        $$\text{PPO: } A_t = G_t - V(s_t) \quad \longrightarrow \quad \text{GRPO: } \hat{A}_i = r_i - \overline{r}$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">PPO 的 $V(s_t)$</span>用 Critic 网络估计"平均能得多少分"——需要训练一整个大网络</div>
+            <div class="item"><span class="symbol">GRPO 的 $\overline{r}$</span>用同一 prompt 的多次采样取平均——Monte Carlo 估计同样是 $\mathbb{E}[r|x]$ 的无偏估计</div>
+            <div class="item"><span class="symbol">核心假设</span>LLM 的"状态"就是 prompt $x$（单步 MDP），所以 $V(s) = \mathbb{E}[r|x] \approx \frac{1}{G}\sum r_i$</div>
+            <div class="item"><span class="symbol">标准化（除以 std）</span>让不同 prompt 之间的 advantage 量级一致，稳定训练</div>
+        </div>
+    </div>
+
+    <h4>KL 惩罚项 $D_{KL}^{(t)}$ 的展开</h4>
+    <div class="formula-box">
+        $$D_{KL}^{(t)} = \frac{\pi_\theta(a_{i,t}|s_{i,t})}{\pi_{ref}(a_{i,t}|s_{i,t})} - \log\frac{\pi_\theta(a_{i,t}|s_{i,t})}{\pi_{ref}(a_{i,t}|s_{i,t})} - 1$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">注意</span>这里的参考模型是 $\pi_{ref}$（SFT 模型），不是 $\pi_{\theta_{old}}$（上一步的策略）</div>
+            <div class="item"><span class="symbol">与 PPO 的区别</span>PPO 通过 clip 隐式约束 $\pi_\theta$ 不偏离 $\pi_{\theta_{old}}$；GRPO 额外加了显式 KL 惩罚约束不偏离 $\pi_{ref}$</div>
+            <div class="item"><span class="symbol">为什么要这一项？</span>防止 reward hacking——模型可能找到得高分但语义退化的"捷径"，KL 约束保持语言质量</div>
+        </div>
+    </div>
+
     <h3>GRPO vs PPO 对比</h3>
     <table>
         <tr><th>维度</th><th>PPO</th><th>GRPO</th></tr>
@@ -998,9 +1198,133 @@ A = 0 → 和平均水平一样</div>
     </table>
 </section>
 
-<!-- ==================== Section 6: RLHF ==================== -->
+<!-- ==================== Section 6: RLVR ==================== -->
+<section id="rlvr">
+    <h2>6. RLVR 范式详解</h2>
+
+    <h3>什么是 RLVR？</h3>
+    <p><strong>RLVR = Reinforcement Learning with Verifiable Rewards</strong>，即"用可验证的奖励信号做强化学习"。它不是一个具体算法，而是一个<strong>训练范式</strong>——描述的是 reward 从哪来，而不是怎么优化。</p>
+
+    <div class="formula-box key">
+        <div class="label">概念层次区分</div>
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">RLVR</span><strong>范式</strong>——reward 怎么来（可验证规则判定，如对/错）</div>
+            <div class="item"><span class="symbol">GRPO / PPO</span><strong>算法</strong>——拿到 reward 后怎么更新策略</div>
+            <div class="item"><span class="symbol">DeepSeek-R1</span>= RLVR 范式 + GRPO 算法</div>
+        </div>
+    </div>
+
+    <h3>RLVR 在整体知识体系中的位置</h3>
+    <div class="ascii-diagram">
+LLM 训练范式
+├── RLHF —— reward 从人类偏好中学习（需要训练 RM）
+│   ├── 优化算法：PPO
+│   └── 简化变体：DPO（跳过 RM）
+│
+├── RLVR —— reward 来自可验证规则（不需要 RM）   ← 当前推理方向主流
+│   ├── 优化算法：GRPO（DeepSeek-R1）
+│   ├── 优化算法：PPO
+│   └── 优化算法：REINFORCE 变体
+│
+└── RLAIF —— reward 从 AI 反馈中学习（AI 做标注员）
+    └── 优化算法：PPO / DPO</div>
+
+    <h3>为什么 RLVR 突然火了？</h3>
+    <p>传统 RLHF 依赖训练出来的 Reward Model，有三个致命问题：</p>
+    <table>
+        <tr><th>问题</th><th>表现</th><th>RLVR 如何解决</th></tr>
+        <tr><td>Reward Hacking</td><td>模型学会讨好 RM 而非真正变好</td><td>规则判定不可被 hack（对就是对）</td></tr>
+        <tr><td>RM 泛化误差</td><td>RM 在分布外样本上打分不准</td><td>规则判定在任何样本上都精确</td></tr>
+        <tr><td>训练成本高</td><td>RM 需要大量人类标注 + 训练</td><td>无需 RM，零额外训练成本</td></tr>
+    </table>
+
+    <h3>RLVR 的标志性发现（DeepSeek-R1）</h3>
+    <div class="box-insight">
+        从 base model 出发，<strong>仅用 RLVR（数学题对错作为 reward）</strong>，不经过 SFT，模型能自发涌现：Chain-of-Thought 推理、自我纠错、反思回溯、分步验证。这打破了"需要先 SFT 教会推理格式"的传统假设。
+    </div>
+
+    <h3>RLVR 的 Reward 设计</h3>
+    <p>RLVR 中 reward 的典型形式：</p>
+    <div class="formula-box">
+        <div class="label">可验证 Reward 的常见设计</div>
+        $$r(x, y) = \begin{cases} +1 & \text{答案正确（通过验证）} \\ -1 \text{ 或 } 0 & \text{答案错误} \end{cases}$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">$x$</span>问题/任务（如一道数学题）</div>
+            <div class="item"><span class="symbol">$y$</span>模型生成的完整回答（含推理过程）</div>
+            <div class="item"><span class="symbol">验证方式</span>数学：提取最终答案对比标准答案；代码：运行测试用例</div>
+            <div class="item"><span class="symbol">注意</span>reward 只看最终答案对错（outcome-level），不管推理过程</div>
+        </div>
+    </div>
+
+    <p>更精细的 reward 设计也可加入格式奖励：</p>
+    <div class="formula-box">
+        $$r(x, y) = r_{accuracy}(x, y) + \alpha \cdot r_{format}(y)$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">$r_{accuracy}$</span>答案正确性（+1 / 0）</div>
+            <div class="item"><span class="symbol">$r_{format}$</span>格式奖励——是否使用了指定的思考标签（如 &lt;think&gt;...&lt;/think&gt;）</div>
+            <div class="item"><span class="symbol">$\alpha$</span>格式奖励权重（通常很小，如 0.1）</div>
+        </div>
+    </div>
+
+    <h3>RLVR 的适用边界</h3>
+    <table>
+        <tr><th>可以用 RLVR</th><th>不能用 RLVR</th></tr>
+        <tr><td>数学题（答案可验证）</td><td>开放式对话（无标准答案）</td></tr>
+        <tr><td>代码生成（可跑测试）</td><td>创意写作</td></tr>
+        <tr><td>逻辑推理（可形式化验证）</td><td>情感共鸣、风格偏好</td></tr>
+        <tr><td>事实问答（有确定答案）</td><td>复杂多维度对齐（有用+无害+诚实）</td></tr>
+        <tr><td>工具调用（执行成功/失败）</td><td>主观质量评估</td></tr>
+    </table>
+
+    <div class="box-warning">
+        RLVR 不是万能的。对于"好坏没有客观标准"的任务（对话、写作、情感），仍需 RLHF/DPO。当前最强的模型通常是 <strong>RLVR（提升推理）+ RLHF（提升对齐）</strong> 的组合。
+    </div>
+
+    <h3>RLVR vs RLHF 完整对比</h3>
+    <table>
+        <tr><th>维度</th><th>RLHF</th><th>RLVR</th></tr>
+        <tr><td>Reward 来源</td><td>训练出来的 Reward Model</td><td>可验证的规则/程序</td></tr>
+        <tr><td>Reward 准确性</td><td>有误差（RM 泛化有限）</td><td>100% 准确（规则不出错）</td></tr>
+        <tr><td>是否可被 Hack</td><td>是（模型学会讨好 RM）</td><td>否（对就是对，无捷径）</td></tr>
+        <tr><td>数据需求</td><td>大量人类偏好标注</td><td>只需问题+标准答案</td></tr>
+        <tr><td>适用任务</td><td>开放式、主观性任务</td><td>答案可验证的客观任务</td></tr>
+        <tr><td>训练成本</td><td>高（4个模型 + 标注成本）</td><td>低（无 RM，规则验证近乎免费）</td></tr>
+        <tr><td>涌现能力</td><td>有限</td><td>可涌现 CoT、自我纠错（DeepSeek-R1）</td></tr>
+        <tr><td>代表工作</td><td>InstructGPT、ChatGPT</td><td>DeepSeek-R1、Qwen-2.5-Math</td></tr>
+    </table>
+
+    <h3>RLVR 的进阶话题</h3>
+
+    <h4>Outcome Reward vs Process Reward</h4>
+    <p>标准 RLVR 只看最终答案对错（Outcome-level），但也可以做更细粒度的过程监督：</p>
+    <table>
+        <tr><th></th><th>Outcome Reward (ORM)</th><th>Process Reward (PRM)</th></tr>
+        <tr><td>打分粒度</td><td>整条回答给一个分</td><td>推理链每一步各给一个分</td></tr>
+        <tr><td>信号密度</td><td>稀疏（只有结尾一个信号）</td><td>密集（每步都有反馈）</td></tr>
+        <tr><td>标注成本</td><td>低（只需验证最终答案）</td><td>高（需要逐步标注正误）</td></tr>
+        <tr><td>效果</td><td>对简单任务够用</td><td>多步推理中显著更强（OpenAI 实证）</td></tr>
+        <tr><td>是否仍是 RLVR？</td><td>是</td><td>如果每步可自动验证则是；需要人类标注则退化为 RLHF</td></tr>
+    </table>
+
+    <h4>RLVR 能涌现推理的原因（直觉解释）</h4>
+    <div class="box-insight">
+        为什么只奖励"答案对"就能让模型自发学会"想过程"？因为复杂题目<strong>直接猜答案几乎不可能得分</strong>，而"先思考、分步骤、验证中间结果"是唯一能稳定提升正确率的策略。RL 的探索机制自然会发现并强化这种策略。模型不是被教会推理的，而是在 reward 信号的引导下自己发现推理是"得分最高的行为模式"。
+    </div>
+
+    <h3>面试中怎么讲 RLVR</h3>
+    <div class="box-interview">
+        "RLVR 是用可验证的奖励信号做强化学习的范式，区别于 RLHF 依赖训练出来的 Reward Model。优势是 reward 完全准确、不可被 hack，代价是只能用在答案可验证的任务上。DeepSeek-R1 证明了 RLVR + GRPO 能从 base model 涌现推理能力，是当前提升 LLM 推理能力的主流范式。"
+    </div>
+
+    <div class="box-interview">
+        <strong>追问：RLVR 的局限？</strong><br>
+        "核心局限是 reward 必须可验证。开放式生成、风格偏好、复杂对齐仍需 RLHF/DPO。另外只用 outcome reward 信号稀疏，复杂推理可能需要 process reward 辅助，但后者的自动验证成本高。当前最强模型通常是 RLVR + RLHF 的组合。"
+    </div>
+</section>
+
+<!-- ==================== Section 7: RLHF ==================== -->
 <section id="rlhf">
-    <h2>6. RLHF 完整流程</h2>
+    <h2>7. RLHF 完整流程</h2>
 
     <div class="step-card">
         <div class="step-number">1</div>
@@ -1040,7 +1364,7 @@ A = 0 → 和平均水平一样</div>
 
 <!-- ==================== Section 7: DPO ==================== -->
 <section id="dpo">
-    <h2>7. DPO 公式推导</h2>
+    <h2>8. DPO 公式推导</h2>
 
     <h3>核心洞察</h3>
     <p>DPO 证明了：<strong>不需要单独训练 Reward Model，偏好数据可以直接优化策略。</strong></p>
@@ -1054,29 +1378,46 @@ A = 0 → 和平均水平一样</div>
         <div class="formula-annotation">
             <div class="item"><span class="symbol">$\mathbb{E}[r(x,y)]$</span>最大化 RM 给的奖励</div>
             <div class="item"><span class="symbol">$-\beta D_{KL}$</span>但不要偏离参考模型太远</div>
+            <div class="item"><span class="symbol">本质</span>在"追求高奖励"和"不要跑偏"之间做平衡</div>
         </div>
     </div>
 
-    <p>这个优化问题有<strong>闭合形式的最优解</strong>：</p>
+    <p>这个优化问题有<strong>闭合形式的最优解</strong>（KKT 条件求解）：</p>
     <div class="formula-box">
         $$\pi^*(y|x) = \frac{1}{Z(x)} \pi_{ref}(y|x) \cdot \exp\left(\frac{1}{\beta}r(x,y)\right)$$
         <div class="formula-annotation">
-            <div class="item"><span class="symbol">$Z(x)$</span>归一化常数，确保概率和为 1</div>
+            <div class="item"><span class="symbol">$\pi_{ref}(y|x) \cdot \exp(\frac{r}{\beta})$</span>参考模型概率 × reward 指数加权——reward 高的回答概率被放大</div>
+            <div class="item"><span class="symbol">$Z(x) = \sum_y \pi_{ref}(y|x)\exp(\frac{r(x,y)}{\beta})$</span>归一化常数——确保所有 $y$ 的概率加起来 = 1</div>
+            <div class="item"><span class="symbol">$\beta$ 的作用</span>$\beta$ 小 → $\exp(\frac{r}{\beta})$ 倍数大 → 高 reward 回答被极大放大 → 策略激进。$\beta$ 大 → 接近 $\pi_{ref}$ → 保守</div>
         </div>
     </div>
 
     <h4>Step 2: 反解出 Reward</h4>
-    <p>从上式解出 $r$：</p>
+    <p>对最优解两边取 log：</p>
+    <div class="formula-box">
+        $$\log\pi^*(y|x) = \log\pi_{ref}(y|x) + \frac{1}{\beta}r(x,y) - \log Z(x)$$
+        <p>移项，解出 $r(x,y)$：</p>
+    </div>
     <div class="formula-box highlight">
         $$r(x,y) = \beta\log\frac{\pi^*(y|x)}{\pi_{ref}(y|x)} + \beta\log Z(x)$$
         <div class="formula-annotation">
-            <div class="item"><span class="symbol">关键洞察</span>reward 可以用"策略的对数概率比"来表示！不需要单独训练 RM。</div>
+            <div class="item"><span class="symbol">$\beta\log\frac{\pi^*}{\pi_{ref}}$</span>最优策略相对参考模型的对数概率比——"最优策略有多偏好这个回答"</div>
+            <div class="item"><span class="symbol">$\beta\log Z(x)$</span>只依赖 $x$ 的常数项——下一步会消掉</div>
+            <div class="item"><span class="symbol">关键洞察</span>reward 可以用"策略的对数概率比"来表示！不需要单独训练 RM</div>
         </div>
     </div>
 
     <h4>Step 3: 代入偏好模型，$Z(x)$ 消掉</h4>
-    <p>Bradley-Terry 模型：$P(y_w \succ y_l) = \sigma(r(x,y_w) - r(x,y_l))$</p>
-    <p>代入反解的 reward，做差时 $\beta\log Z(x)$ 消掉（两个 reward 共享同一个 $x$）：</p>
+    <p>Bradley-Terry 偏好模型：$P(y_w \succ y_l) = \sigma(r(x,y_w) - r(x,y_l))$</p>
+    <p>把 Step 2 的 reward 代入，做差：</p>
+    <div class="formula-box">
+        $$r(x,y_w) - r(x,y_l) = \beta\log\frac{\pi^*(y_w|x)}{\pi_{ref}(y_w|x)} + \cancel{\beta\log Z(x)} - \beta\log\frac{\pi^*(y_l|x)}{\pi_{ref}(y_l|x)} - \cancel{\beta\log Z(x)}$$
+        <div class="formula-annotation">
+            <div class="item"><span class="symbol">$\cancel{\beta\log Z(x)}$</span>两个 reward 共享同一个 prompt $x$，所以 $Z(x)$ 项相减为零——消掉了！</div>
+            <div class="item"><span class="symbol">结果</span>偏好概率只取决于概率比的差，不需要知道归一化常数</div>
+        </div>
+    </div>
+    <p>用可训练的 $\pi_\theta$ 替代理论上的 $\pi^*$，取负对数似然作为损失函数：</p>
 
     <div class="formula-box highlight">
         <div class="label">DPO 最终损失函数</div>
@@ -1109,7 +1450,7 @@ A = 0 → 和平均水平一样</div>
 
 <!-- ==================== Section 8: Reward ==================== -->
 <section id="reward">
-    <h2>8. Reward 设计方法论</h2>
+    <h2>9. Reward 设计方法论</h2>
 
     <h3>Reward 来源的完整谱系</h3>
     <table>
@@ -1141,7 +1482,7 @@ A = 0 → 和平均水平一样</div>
 
 <!-- ==================== Section 9: Comparison ==================== -->
 <section id="comparison">
-    <h2>9. 算法对比总结</h2>
+    <h2>10. 算法对比总结</h2>
 
     <h3>策略优化算法对比</h3>
     <table>
@@ -1162,13 +1503,14 @@ A = 0 → 和平均水平一样</div>
         <tr><td><strong>GRPO</strong></td><td>可选</td><td>可验证 reward</td><td>中（无 Critic）</td><td>推理任务强</td></tr>
         <tr><td><strong>KTO</strong></td><td>否</td><td>二元标签</td><td>低</td><td>数据少时优势</td></tr>
         <tr><td><strong>Online DPO</strong></td><td>否</td><td>在线偏好</td><td>中</td><td>强于离线 DPO</td></tr>
+        <tr><td><strong>RLVR + GRPO</strong></td><td>否（规则验证）</td><td>问题+标准答案</td><td>中</td><td>推理任务最强</td></tr>
     </table>
 
     <h3>如何选择？</h3>
     <div class="box-insight">
         <strong>通用游戏/机器人</strong> → PPO（最稳）<br>
         <strong>LLM 通用对齐，资源有限</strong> → DPO（最简）<br>
-        <strong>LLM 推理（数学/代码）</strong> → GRPO + 规则 Reward（DeepSeek-R1 路线）<br>
+        <strong>LLM 推理（数学/代码）</strong> → RLVR + GRPO（DeepSeek-R1 路线）<br>
         <strong>偏好数据少</strong> → KTO（只需好/坏标签）<br>
         <strong>追求最佳效果</strong> → Online RLHF 或 Iterative DPO
     </div>
@@ -1181,7 +1523,7 @@ A = 0 → 和平均水平一样</div>
 
 <!-- ==================== Section 10: FAQ ==================== -->
 <section id="faq">
-    <h2>10. 高频面试问答</h2>
+    <h2>11. 高频面试问答</h2>
 
     <div class="step-card">
         <h4>Q: On-policy vs Off-policy？</h4>
@@ -1233,6 +1575,16 @@ A = 0 → 和平均水平一样</div>
     <div class="step-card">
         <h4>Q: GRPO 的组大小 $G$ 怎么选？</h4>
         <p>通常 32-64。越大 advantage 估计越稳定但推理成本线性增长。太小（如 4）会导致标准化后的 advantage 噪声大。</p>
+    </div>
+
+    <div class="step-card">
+        <h4>Q: RLVR 是什么？和 RLHF 什么关系？</h4>
+        <p><strong>RLVR</strong> = Reinforcement Learning with Verifiable Rewards，是一种训练范式而非具体算法。它用可验证的规则（如答案对错）作为 reward，无需训练 RM。和 RLHF 的区别在于 reward 来源不同：RLHF 从人类偏好学习 reward，RLVR 用确定性规则验证。RLVR 适用于可验证任务（数学/代码），RLHF 适用于主观任务（对话/写作）。</p>
+    </div>
+
+    <div class="step-card">
+        <h4>Q: 为什么 RLVR 能让模型涌现推理能力？</h4>
+        <p>复杂题目直接猜答案几乎不可能得分，而"先思考、分步骤、验证中间结果"是唯一能稳定提升正确率的策略。RL 的探索机制自然会发现并强化这种模式。模型不是被教会推理的，而是在 reward 信号引导下自己发现"推理=高 reward"。</p>
     </div>
 </section>
 

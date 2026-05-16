@@ -1231,7 +1231,7 @@ A = 0 → 和平均水平一样</div>
       <!-- Actor box -->
       <rect x="40" y="56" width="260" height="80" rx="14" fill="url(#gCalc)" stroke="#3b82f6" stroke-width="2" filter="url(#ds2)"/>
       <rect x="40" y="56" width="6" height="80" rx="3" fill="url(#gActor)"/>
-      <text x="64" y="82" font-size="13" font-weight="800" fill="#1e40af" font-family="system-ui,sans-serif">Actor π_θ（策略网络）</text>
+      <text x="64" y="82" font-size="13" font-weight="800" fill="#1e40af" font-family="system-ui,sans-serif">Actor π<tspan font-size="9" baseline-shift="sub">θ</tspan>（策略网络）</text>
       <text x="64" y="104" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">输入 s → 输出动作分布 → 采样 a</text>
       <text x="64" y="122" font-size="10.5" fill="#64748b" font-family="system-ui,sans-serif">（学生：决定怎么做）</text>
 
@@ -1239,7 +1239,7 @@ A = 0 → 和平均水平一样</div>
       <rect x="400" y="56" width="260" height="80" rx="14" fill="url(#gCalc)" stroke="#10b981" stroke-width="2" filter="url(#ds2)"/>
       <rect x="400" y="56" width="6" height="80" rx="3" fill="url(#gEnv)"/>
       <text x="424" y="82" font-size="13" font-weight="800" fill="#065f46" font-family="system-ui,sans-serif">Environment 环境</text>
-      <text x="424" y="104" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">接收 a → 返回 (s', r, done)</text>
+      <text x="424" y="104" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">接收 a → 返回 (s′, r, done)</text>
       <text x="424" y="122" font-size="10.5" fill="#64748b" font-family="system-ui,sans-serif">（试卷：给出成绩）</text>
 
       <!-- Arrow: Actor → Env -->
@@ -1251,7 +1251,7 @@ A = 0 → 和平均水平一样</div>
 
       <!-- ====== Row 2: Collected Data ====== -->
       <rect x="120" y="170" width="460" height="52" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" filter="url(#ds2)"/>
-      <text x="350" y="194" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="system-ui,sans-serif">采集数据：(s_t, a_t, r_t, s_{t+1}) × 多步</text>
+      <text x="350" y="194" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46" font-family="system-ui,sans-serif">采集数据：(sₜ, aₜ, rₜ, sₜ₊₁) × 多步</text>
       <text x="350" y="212" text-anchor="middle" font-size="10.5" fill="#475569" font-family="system-ui,sans-serif">一条或多条轨迹的交互经验</text>
 
       <!-- Arrow: data → split to both -->
@@ -1262,19 +1262,19 @@ A = 0 → 和平均水平一样</div>
       <!-- Critic box -->
       <rect x="400" y="262" width="260" height="80" rx="14" fill="url(#gCalc)" stroke="#f59e0b" stroke-width="2" filter="url(#ds2)"/>
       <rect x="400" y="262" width="6" height="80" rx="3" fill="url(#gCritic)"/>
-      <text x="424" y="288" font-size="13" font-weight="800" fill="#92400e" font-family="system-ui,sans-serif">Critic V_φ（价值网络）</text>
-      <text x="424" y="310" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">输入 s → 输出 V_φ(s)（状态评分）</text>
+      <text x="424" y="288" font-size="13" font-weight="800" fill="#92400e" font-family="system-ui,sans-serif">Critic V<tspan font-size="9" baseline-shift="sub">φ</tspan>（价值网络）</text>
+      <text x="424" y="310" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">输入 s → 输出 V<tspan font-size="8" baseline-shift="sub">φ</tspan>(s)（状态评分）</text>
       <text x="424" y="328" font-size="10.5" fill="#64748b" font-family="system-ui,sans-serif">（老师：评估当前局面好坏）</text>
 
       <!-- Compute Advantage box -->
       <rect x="40" y="262" width="260" height="80" rx="14" fill="#ede9fe" stroke="#a78bfa" stroke-width="1.5" filter="url(#ds2)"/>
       <text x="170" y="292" text-anchor="middle" font-size="13" font-weight="800" fill="#5b21b6" font-family="system-ui,sans-serif">计算 Advantage</text>
-      <text x="170" y="314" text-anchor="middle" font-size="12" fill="#6d28d9" font-family="'Times New Roman',serif" font-style="italic">A_t = G_t − V_φ(s_t)</text>
+      <text x="170" y="314" text-anchor="middle" font-size="12" fill="#6d28d9" font-family="'Times New Roman',serif" font-style="italic">Aₜ = Gₜ − V<tspan font-size="8.5" baseline-shift="sub">φ</tspan>(sₜ)</text>
       <text x="170" y="332" text-anchor="middle" font-size="10.5" fill="#7c3aed" font-family="system-ui,sans-serif">"这个动作比平均水平好了多少"</text>
 
       <!-- Arrow: Critic → Advantage (provide V_φ) -->
       <line x1="395" y1="302" x2="305" y2="302" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2o)"/>
-      <text x="350" y="296" text-anchor="middle" font-size="9.5" fill="#92400e" font-family="system-ui,sans-serif">提供 V_φ(s)</text>
+      <text x="350" y="296" text-anchor="middle" font-size="9.5" fill="#92400e" font-family="system-ui,sans-serif">提供 V<tspan font-size="7" baseline-shift="sub">φ</tspan>(s)</text>
 
       <!-- ====== Row 4: Two updates in parallel ====== -->
       <!-- Arrow down from Advantage to Actor Update -->
@@ -1288,18 +1288,18 @@ A = 0 → 和平均水平一样</div>
       <circle cx="66" cy="414" r="12" fill="url(#gActor)"/>
       <text x="66" y="418" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">A</text>
       <text x="86" y="418" font-size="12" font-weight="700" fill="#1e40af" font-family="system-ui,sans-serif">Actor 更新</text>
-      <text x="56" y="440" font-size="11" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">θ ← θ + α · ∇log π_θ(a|s) · A_t</text>
-      <text x="56" y="460" font-size="10" fill="#475569" font-family="system-ui,sans-serif">A &gt; 0：增大该动作概率</text>
-      <text x="56" y="474" font-size="10" fill="#475569" font-family="system-ui,sans-serif">A &lt; 0：减小该动作概率</text>
+      <text x="56" y="440" font-size="11" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">θ ← θ + α · ∇log π<tspan font-size="8" baseline-shift="sub">θ</tspan>(a|s) · Aₜ</text>
+      <text x="56" y="460" font-size="10" fill="#475569" font-family="system-ui,sans-serif">Aₜ &gt; 0：增大该动作概率</text>
+      <text x="56" y="474" font-size="10" fill="#475569" font-family="system-ui,sans-serif">Aₜ &lt; 0：减小该动作概率</text>
 
       <!-- Critic Update -->
       <rect x="400" y="392" width="260" height="92" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" filter="url(#ds2)"/>
       <circle cx="426" cy="414" r="12" fill="url(#gCritic)"/>
       <text x="426" y="418" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">C</text>
       <text x="446" y="418" font-size="12" font-weight="700" fill="#92400e" font-family="system-ui,sans-serif">Critic 更新</text>
-      <text x="416" y="440" font-size="11" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">φ ← φ − α_c · ∇_φ(V_φ(s) − G_t)²</text>
-      <text x="416" y="460" font-size="10" fill="#475569" font-family="system-ui,sans-serif">让预测值 V_φ 逼近真实回报 G_t</text>
-      <text x="416" y="474" font-size="10" fill="#475569" font-family="system-ui,sans-serif">（MSE 最优解 = 条件期望 V^π）</text>
+      <text x="416" y="440" font-size="11" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">φ ← φ − α<tspan font-size="8" baseline-shift="sub">c</tspan> · ∇<tspan font-size="8" baseline-shift="sub">φ</tspan>(V<tspan font-size="8" baseline-shift="sub">φ</tspan>(s) − Gₜ)²</text>
+      <text x="416" y="460" font-size="10" fill="#475569" font-family="system-ui,sans-serif">让预测值 V<tspan font-size="7" baseline-shift="sub">φ</tspan> 逼近真实回报 Gₜ</text>
+      <text x="416" y="474" font-size="10" fill="#475569" font-family="system-ui,sans-serif">（MSE 最优解 = 条件期望 V<tspan font-size="7" baseline-shift="super">π</tspan>）</text>
 
       <!-- ====== Row 5: Loop back ====== -->
       <!-- merge arrows down -->

@@ -765,12 +765,21 @@ A = 0 → 和平均水平一样</div>
             $$\mathbb{E}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot R(\tau)\right] = \underbrace{\mathbb{E}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot \sum_{k=0}^{t-1}\gamma^k r_k\right]}_{= \; 0\text{（过去奖励项）}} + \mathbb{E}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot \gamma^t G_t\right]$$
         </div>
 
-        <p><strong>为什么第一项 = 0？</strong></p>
+        <p><strong>为什么第一项 = 0？（逐步推导）</strong></p>
         <div class="formula-box">
-            $$\mathbb{E}_{a_t \sim \pi}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot c\right] = c \cdot \nabla_\theta \underbrace{\sum_a \pi_\theta(a|s_t)}_{= 1 \text{（概率归一化）}} = c \cdot 0 = 0$$
+            <p>先把期望写成显式求和（期望的定义）：</p>
+            $$\mathbb{E}_{a_t \sim \pi}\left[\nabla_\theta\log\pi_\theta(a_t|s_t) \cdot c\right] = \sum_a \pi_\theta(a|s_t) \cdot \nabla_\theta\log\pi_\theta(a|s_t) \cdot c$$
+
+            <p>用 log-derivative 恒等式 $\nabla_\theta\log\pi = \frac{\nabla_\theta\pi}{\pi}$ 代入，$\pi$ 和分母的 $\pi$ <strong>约分</strong>：</p>
+            $$= \sum_a \pi_\theta \cdot \frac{\nabla_\theta\pi_\theta}{\pi_\theta} \cdot c = \sum_a \nabla_\theta\pi_\theta(a|s_t) \cdot c$$
+
+            <p>$c$ 是常数，提到求和外面；梯度和求和可交换顺序：</p>
+            $$= c \cdot \nabla_\theta \underbrace{\sum_a \pi_\theta(a|s_t)}_{= 1 \text{（概率归一化）}} = c \cdot \nabla_\theta\, 1 = c \cdot 0 = 0$$
+
             <div class="formula-annotation">
                 <div class="item"><span class="symbol">$c = \sum_{k=0}^{t-1}\gamma^k r_k$</span>过去的折扣奖励——在 $a_t$ 之前就已经确定，对 $a_t$ 的期望来说是常数（不管选什么 $a_t$，它都不变）</div>
-                <div class="item"><span class="symbol">$\sum_a \pi(a|s) = 1$</span>所有动作概率之和永远为 1，对 1 求导 = 0</div>
+                <div class="item"><span class="symbol">关键一步</span>$\pi \cdot \frac{\nabla\pi}{\pi} = \nabla\pi$——这就是 $\log$ 消失的原因：期望自带的 $\pi$ 和 log-derivative 的分母 $\pi$ 恰好约掉</div>
+                <div class="item"><span class="symbol">$\sum_a \pi(a|s) = 1$</span>所有动作概率之和永远为 1，常数的梯度 = 0</div>
                 <div class="item"><span class="symbol">直觉</span>时刻 $t$ 的决策只能影响未来，不能改变过去。过去的奖励（含折扣）是"噪声"，去掉后方差更小</div>
             </div>
         </div>

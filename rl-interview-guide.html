@@ -32,16 +32,49 @@
             --gray-700: #374151;
             --gray-800: #1f2937;
             --gray-900: #111827;
-            --radius: 10px;
+            --radius: 12px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        html { scroll-behavior: smooth; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Reading progress bar */
+        .reading-progress {
+            position: fixed; top: 0; left: 0;
+            width: 0%; height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--purple), var(--accent));
+            z-index: 1000;
+            transition: width 0.1s linear;
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* Back to top */
+        .back-to-top {
+            position: fixed; bottom: 32px; right: 32px;
+            width: 44px; height: 44px;
+            background: var(--primary);
+            color: white; border: none; border-radius: 50%;
+            cursor: pointer; font-size: 20px;
+            box-shadow: var(--shadow-md);
+            opacity: 0; transform: translateY(16px);
+            transition: all var(--transition);
+            z-index: 999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .back-to-top.visible { opacity: 1; transform: translateY(0); }
+        .back-to-top:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', sans-serif;
             line-height: 1.85;
             color: var(--gray-800);
-            background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+            background: #f4f6fb;
+            background-image: radial-gradient(ellipse at 20% 0%, rgba(37,99,235,0.04) 0%, transparent 50%),
+                              radial-gradient(ellipse at 80% 100%, rgba(124,58,237,0.03) 0%, transparent 50%);
             min-height: 100vh;
         }
 
@@ -54,36 +87,58 @@
         /* Header */
         header {
             text-align: center;
-            padding: 64px 0 48px;
+            padding: 72px 0 52px;
             margin-bottom: 48px;
+            position: relative;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 120px; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--purple));
+            border-radius: 2px;
         }
 
         header h1 {
-            font-size: 2.6rem;
-            color: var(--gray-900);
-            margin-bottom: 12px;
+            font-size: 2.7rem;
+            background: linear-gradient(135deg, var(--gray-900) 0%, var(--primary-dark) 60%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 14px;
             letter-spacing: -0.5px;
         }
 
         header .subtitle {
             font-size: 1.1rem;
             color: var(--gray-600);
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            letter-spacing: 0.2px;
         }
 
         header .tags {
             display: flex;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
         header .tags span {
             display: inline-block;
-            padding: 4px 12px;
+            padding: 5px 16px;
             border-radius: 20px;
             font-size: 0.82rem;
-            font-weight: 500;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        header .tags span:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
         .tag-blue { background: var(--primary-light); color: var(--primary-dark); }
@@ -95,10 +150,21 @@
         nav.toc {
             background: white;
             border: 1px solid var(--gray-200);
-            border-radius: 16px;
+            border-radius: 18px;
             padding: 32px 36px;
             margin-bottom: 56px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            box-shadow: var(--shadow-md);
+            transition: box-shadow var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        nav.toc::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent), var(--success), var(--purple));
         }
 
         nav.toc h2 {
@@ -111,51 +177,101 @@
         }
 
         nav.toc ol {
-            padding-left: 20px;
+            padding-left: 0;
             columns: 2;
             column-gap: 32px;
+            list-style: none;
+            counter-reset: toc-counter;
         }
 
         nav.toc li {
             margin-bottom: 10px;
             break-inside: avoid;
+            counter-increment: toc-counter;
         }
 
         nav.toc a {
-            color: var(--primary);
+            color: var(--gray-700);
             text-decoration: none;
             font-size: 0.95rem;
-            transition: color 0.2s;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 8px;
         }
 
-        nav.toc a:hover { color: var(--primary-dark); text-decoration: underline; }
+        nav.toc a::before {
+            content: counter(toc-counter, decimal-leading-zero);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px; height: 28px;
+            background: var(--gray-100);
+            color: var(--primary-dark);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            transition: all var(--transition);
+        }
+
+        nav.toc a:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        nav.toc a:hover::before {
+            background: var(--primary);
+            color: white;
+        }
 
         /* Sections */
         section {
             background: white;
-            border-radius: 16px;
-            padding: 40px 36px;
+            border-radius: 18px;
+            padding: 44px 40px;
             margin-bottom: 32px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            box-shadow: var(--shadow-sm);
             border: 1px solid var(--gray-100);
+            transition: box-shadow var(--transition), transform var(--transition);
+        }
+
+        section:hover {
+            box-shadow: var(--shadow-md);
         }
 
         h2 {
             font-size: 1.7rem;
             color: var(--gray-900);
             margin-bottom: 28px;
-            padding-bottom: 14px;
-            border-bottom: 3px solid var(--primary);
+            padding-bottom: 16px;
+            border-bottom: none;
             letter-spacing: -0.3px;
+            position: relative;
+        }
+
+        h2::after {
+            content: "";
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 60px; height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            border-radius: 2px;
         }
 
         h3 {
             font-size: 1.25rem;
             color: var(--gray-900);
-            margin-top: 36px;
+            margin-top: 40px;
             margin-bottom: 16px;
-            padding-left: 12px;
+            padding-left: 14px;
             border-left: 4px solid var(--primary);
+            transition: border-color var(--transition);
+        }
+
+        h3:hover {
+            border-left-color: var(--accent);
         }
 
         h4 {
@@ -174,9 +290,14 @@
             border: 1px solid var(--primary-light);
             border-left: 5px solid var(--primary);
             border-radius: var(--radius);
-            padding: 22px 26px;
+            padding: 24px 28px;
             margin: 20px 0;
             overflow-x: auto;
+            transition: box-shadow var(--transition), transform var(--transition);
+        }
+
+        .formula-box:hover {
+            box-shadow: 0 4px 20px rgba(37,99,235,0.08);
         }
 
         .formula-box.highlight {
@@ -185,23 +306,35 @@
             border-color: var(--accent-light);
         }
 
+        .formula-box.highlight:hover {
+            box-shadow: 0 4px 20px rgba(245,158,11,0.1);
+        }
+
         .formula-box.key {
             background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
             border-left-color: var(--success);
             border-color: #bbf7d0;
         }
 
-        .formula-box .label {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--primary-dark);
-            margin-bottom: 8px;
+        .formula-box.key:hover {
+            box-shadow: 0 4px 20px rgba(16,185,129,0.08);
         }
 
-        .formula-box.highlight .label { color: #92400e; }
-        .formula-box.key .label { color: #065f46; }
+        .formula-box .label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+            display: inline-block;
+            padding: 2px 10px;
+            background: rgba(37,99,235,0.08);
+            border-radius: 4px;
+        }
+
+        .formula-box.highlight .label { color: #92400e; background: rgba(245,158,11,0.1); }
+        .formula-box.key .label { color: #065f46; background: rgba(16,185,129,0.08); }
 
         .formula-annotation {
             margin-top: 14px;
@@ -230,73 +363,89 @@
         /* Insight/Warning boxes */
         .box-insight, .box-warning, .box-interview, .box-analogy {
             border-radius: var(--radius);
-            padding: 18px 22px;
+            padding: 20px 24px;
             margin: 20px 0;
             font-size: 0.94rem;
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        .box-insight:hover, .box-warning:hover, .box-interview:hover, .box-analogy:hover {
+            transform: translateX(2px);
         }
 
         .box-insight {
-            background: var(--success-light);
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
             border-left: 5px solid var(--success);
         }
-        .box-insight::before { content: "💡 直觉理解"; font-weight: 700; display: block; margin-bottom: 8px; color: #065f46; }
+        .box-insight::before { content: "💡 直觉理解"; font-weight: 700; display: block; margin-bottom: 10px; color: #065f46; font-size: 0.88rem; letter-spacing: 0.3px; }
 
         .box-warning {
-            background: var(--danger-light);
+            background: linear-gradient(135deg, #fff5f5, #fee2e2);
             border-left: 5px solid var(--danger);
         }
-        .box-warning::before { content: "⚠️ 面试易错点"; font-weight: 700; display: block; margin-bottom: 8px; color: #991b1b; }
+        .box-warning::before { content: "⚠️ 面试易错点"; font-weight: 700; display: block; margin-bottom: 10px; color: #991b1b; font-size: 0.88rem; letter-spacing: 0.3px; }
 
         .box-interview {
-            background: #eff6ff;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
             border-left: 5px solid var(--primary);
         }
-        .box-interview::before { content: "🎤 30秒面试回答"; font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary-dark); }
+        .box-interview::before { content: "🎤 30秒面试回答"; font-weight: 700; display: block; margin-bottom: 10px; color: var(--primary-dark); font-size: 0.88rem; letter-spacing: 0.3px; }
 
         .box-analogy {
-            background: var(--purple-light);
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
             border-left: 5px solid var(--purple);
         }
-        .box-analogy::before { content: "🎯 类比"; font-weight: 700; display: block; margin-bottom: 8px; color: #5b21b6; }
+        .box-analogy::before { content: "🎯 类比"; font-weight: 700; display: block; margin-bottom: 10px; color: #5b21b6; font-size: 0.88rem; letter-spacing: 0.3px; }
 
         /* Tables */
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             margin: 20px 0;
             font-size: 0.9rem;
             background: white;
             border-radius: var(--radius);
             overflow: hidden;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
         }
 
         th {
-            background: var(--gray-900);
+            background: linear-gradient(135deg, var(--gray-900), #2d3748);
             color: white;
-            padding: 13px 16px;
+            padding: 14px 18px;
             text-align: left;
             font-weight: 600;
             font-size: 0.85rem;
+            letter-spacing: 0.3px;
         }
 
         td {
-            padding: 12px 16px;
+            padding: 13px 18px;
             border-bottom: 1px solid var(--gray-100);
             vertical-align: top;
+            transition: background var(--transition);
         }
 
         tr:last-child td { border-bottom: none; }
         tr:nth-child(even) { background: var(--gray-50); }
+        tbody tr:hover td { background: rgba(37,99,235,0.03); }
 
         /* Cards */
         .step-card {
             background: var(--gray-50);
             border: 1px solid var(--gray-200);
-            border-radius: 12px;
-            padding: 24px 28px;
-            margin: 24px 0;
+            border-radius: 14px;
+            padding: 26px 30px;
+            margin: 26px 0;
             position: relative;
+            transition: box-shadow var(--transition), transform var(--transition);
+        }
+
+        .step-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
         }
 
         .step-card h4 {
@@ -307,18 +456,19 @@
 
         .step-card .step-number {
             position: absolute;
-            top: -12px;
-            left: 20px;
-            background: var(--primary);
+            top: -14px;
+            left: 22px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 0.8rem;
             font-weight: 700;
+            box-shadow: 0 2px 6px rgba(37,99,235,0.3);
         }
 
         /* Evolution diagram */
@@ -327,17 +477,24 @@
             flex-direction: column;
             align-items: center;
             gap: 0;
-            margin: 32px 0;
+            margin: 36px 0;
         }
 
         .evo-node {
             background: white;
             border: 2px solid var(--primary);
-            border-radius: 12px;
-            padding: 14px 24px;
+            border-radius: 14px;
+            padding: 16px 28px;
             text-align: center;
-            width: 320px;
+            width: 340px;
             position: relative;
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .evo-node:hover {
+            box-shadow: var(--shadow-md);
+            transform: scale(1.02);
         }
 
         .evo-node .name { font-weight: 700; color: var(--gray-900); font-size: 1rem; }
@@ -347,18 +504,19 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 6px 0;
+            padding: 8px 0;
             color: var(--gray-600);
             font-size: 0.78rem;
+            font-style: italic;
         }
 
-        .evo-arrow::before { content: "↓"; font-size: 1.2rem; color: var(--primary); }
+        .evo-arrow::before { content: "↓"; font-size: 1.3rem; color: var(--primary); font-style: normal; }
 
         /* ASCII art */
         .ascii-diagram {
-            background: var(--gray-900);
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             color: #a5f3fc;
-            padding: 24px 28px;
+            padding: 26px 30px;
             border-radius: var(--radius);
             font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
             font-size: 0.82rem;
@@ -366,6 +524,7 @@
             overflow-x: auto;
             white-space: pre;
             margin: 20px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
         }
 
         /* Comparison grid */
@@ -405,11 +564,17 @@
         .symbol-card {
             background: white;
             border: 1px solid var(--gray-200);
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 14px 16px;
             display: flex;
             align-items: baseline;
             gap: 12px;
+            transition: all var(--transition);
+        }
+
+        .symbol-card:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-sm);
         }
 
         .symbol-card .sym {
@@ -437,25 +602,52 @@
             padding: 48px 0 32px;
             color: var(--gray-600);
             font-size: 0.88rem;
+            position: relative;
         }
 
-        footer a { color: var(--primary); text-decoration: none; }
+        footer::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 80px; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gray-300), transparent);
+        }
+
+        footer a { color: var(--primary); text-decoration: none; transition: color var(--transition); }
+        footer a:hover { color: var(--primary-dark); }
 
         /* Responsive */
         @media (max-width: 768px) {
             .container { padding: 20px 16px; }
-            section { padding: 28px 20px; }
+            section { padding: 28px 20px; border-radius: 14px; }
             header h1 { font-size: 1.9rem; }
             h2 { font-size: 1.4rem; }
             nav.toc ol { columns: 1; }
             .comparison-grid { grid-template-columns: 1fr; }
             .symbol-grid { grid-template-columns: 1fr; }
             .evo-node { width: 260px; }
+            .back-to-top { bottom: 20px; right: 20px; width: 40px; height: 40px; font-size: 18px; }
         }
+
+        /* Print styles */
+        @media print {
+            body { background: white; }
+            .reading-progress, .back-to-top { display: none !important; }
+            section { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+            nav.toc { break-after: page; }
+            .formula-box, .box-insight, .box-warning, .box-interview, .box-analogy { break-inside: avoid; }
+        }
+
+        /* Selection color */
+        ::selection { background: rgba(37,99,235,0.15); }
     </style>
 </head>
 <body>
 <div class="container">
+
+<div class="reading-progress" id="readingProgress"></div>
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})">↑</button>
 
 <header>
     <h1>强化学习面试速查手册</h1>
@@ -683,104 +875,96 @@ A = 0 → 和平均水平一样</div>
     <h4>完整推导（5 步）</h4>
 
     <!-- REINFORCE 核心链路概览图 -->
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" style="width:100%;max-width:820px;margin:10px auto 28px;display:block;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 680" style="width:100%;max-width:700px;margin:10px auto 28px;display:block;">
       <defs>
-        <linearGradient id="gBg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#f8fafc"/>
-          <stop offset="100%" stop-color="#eef2f7"/>
+        <linearGradient id="gCard" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#f8fafc"/>
         </linearGradient>
-        <linearGradient id="gStep" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#3b82f6"/>
-          <stop offset="100%" stop-color="#2563eb"/>
-        </linearGradient>
-        <linearGradient id="gKey" x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id="gStar" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stop-color="#f59e0b"/>
           <stop offset="100%" stop-color="#d97706"/>
         </linearGradient>
-        <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1e3a5f" flood-opacity="0.08"/>
+        <linearGradient id="gNum" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#1d4ed8"/>
+        </linearGradient>
+        <linearGradient id="gFinal" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#1d4ed8"/>
+          <stop offset="100%" stop-color="#1e40af"/>
+        </linearGradient>
+        <filter id="ds" x="-2%" y="-2%" width="104%" height="108%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#1e3a5f" flood-opacity="0.07"/>
         </filter>
-        <marker id="arrowM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8"/>
+        <marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#94a3b8"/>
         </marker>
       </defs>
 
       <!-- background -->
-      <rect width="820" height="520" rx="16" fill="url(#gBg)" stroke="#dde4ee" stroke-width="1"/>
-
-      <!-- title -->
-      <text x="410" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#1e293b" font-family="system-ui,sans-serif">REINFORCE 核心推导链路</text>
+      <rect width="700" height="680" rx="18" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="350" y="34" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a" font-family="system-ui,sans-serif" letter-spacing="0.5">REINFORCE 推导核心链路</text>
 
       <!-- ===== Step 1 ===== -->
-      <rect x="30" y="56" width="230" height="80" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
-      <circle cx="52" cy="76" r="12" fill="url(#gStep)"/>
-      <text x="52" y="81" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">1</text>
-      <text x="72" y="80" font-size="12.5" font-weight="700" fill="#1e293b" font-family="system-ui">写出积分形式</text>
-      <text x="44" y="100" font-size="11" fill="#475569" font-family="system-ui">目标：∇J = ∫ ∇P · R dτ</text>
-      <text x="44" y="118" font-size="10.5" fill="#94a3b8" font-family="system-ui">障碍：∇P 无法直接计算</text>
+      <rect x="40" y="52" width="620" height="72" rx="12" fill="url(#gCard)" stroke="#e2e8f0" stroke-width="1" filter="url(#ds)"/>
+      <circle cx="72" cy="88" r="16" fill="url(#gNum)"/>
+      <text x="72" y="93" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui">1</text>
+      <text x="100" y="80" font-size="12" font-weight="700" fill="#334155" font-family="system-ui,sans-serif">写出梯度积分形式</text>
+      <text x="100" y="100" font-size="13" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">∇J = ∇∫P(τ|θ)R(τ)dτ = ∫∇P · R dτ</text>
+      <text x="540" y="100" font-size="10.5" fill="#ef4444" font-weight="600" font-family="system-ui">⚠ ∇P 无法直接算</text>
 
-      <!-- arrow 1→2 -->
-      <line x1="260" y1="96" x2="290" y2="96" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowM)"/>
+      <!-- arrow -->
+      <line x1="350" y1="124" x2="350" y2="150" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
 
-      <!-- ===== Step 2 (highlight) ===== -->
-      <rect x="296" y="56" width="230" height="80" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
-      <circle cx="318" cy="76" r="12" fill="url(#gKey)"/>
-      <text x="318" y="81" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">2</text>
-      <text x="338" y="80" font-size="12.5" font-weight="700" fill="#92400e" font-family="system-ui">Log-Derivative Trick ★</text>
-      <text x="310" y="100" font-size="11" fill="#78350f" font-family="system-ui">∇P = P·∇log P → 积分变期望</text>
-      <text x="310" y="118" font-size="10.5" fill="#b45309" font-family="system-ui">E[∇log P · R] — 可采样近似！</text>
+      <!-- ===== Step 2 (star) ===== -->
+      <rect x="40" y="155" width="620" height="72" rx="12" fill="#fffbeb" stroke="#fbbf24" stroke-width="1.5" filter="url(#ds)"/>
+      <circle cx="72" cy="191" r="16" fill="url(#gStar)"/>
+      <text x="72" y="196" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui">2</text>
+      <text x="100" y="183" font-size="12" font-weight="700" fill="#92400e" font-family="system-ui,sans-serif">Log-Derivative Trick ★  积分 → 期望 → 可采样</text>
+      <text x="100" y="203" font-size="13" fill="#78350f" font-family="'Times New Roman',serif" font-style="italic">∇P = P·∇log P  ⟹  ∫P·∇logP·R dτ = E[∇logP · R(τ)]</text>
 
-      <!-- arrow 2→3 -->
-      <line x1="526" y1="96" x2="556" y2="96" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowM)"/>
+      <!-- arrow -->
+      <line x1="350" y1="227" x2="350" y2="253" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
 
       <!-- ===== Step 3 ===== -->
-      <rect x="562" y="56" width="230" height="80" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
-      <circle cx="584" cy="76" r="12" fill="url(#gStep)"/>
-      <text x="584" y="81" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">3</text>
-      <text x="604" y="80" font-size="12.5" font-weight="700" fill="#1e293b" font-family="system-ui">展开 log P(τ|θ)</text>
-      <text x="576" y="100" font-size="11" fill="#475569" font-family="system-ui">log P = log π + log P(env)</text>
-      <text x="576" y="118" font-size="10.5" fill="#16a34a" font-weight="600" font-family="system-ui">环境项与 θ 无关 → 消掉！</text>
+      <rect x="40" y="258" width="620" height="72" rx="12" fill="url(#gCard)" stroke="#e2e8f0" stroke-width="1" filter="url(#ds)"/>
+      <circle cx="72" cy="294" r="16" fill="url(#gNum)"/>
+      <text x="72" y="299" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui">3</text>
+      <text x="100" y="286" font-size="12" font-weight="700" fill="#334155" font-family="system-ui,sans-serif">展开 log P(τ|θ)，环境项消掉</text>
+      <text x="100" y="306" font-size="13" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">∇logP = ∇log π + ∇log P(env)</text>
+      <text x="454" y="306" font-size="13" fill="#16a34a" font-weight="700" font-family="system-ui">→ 只剩 Σ∇log π(aₜ|sₜ)</text>
 
-      <!-- arrow 3→4 (bend down) -->
-      <path d="M 677 136 L 677 170 L 560 170 L 560 200" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowM)"/>
+      <!-- arrow -->
+      <line x1="350" y1="330" x2="350" y2="356" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
 
       <!-- ===== Step 4 ===== -->
-      <rect x="410" y="206" width="380" height="88" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
-      <circle cx="432" cy="228" r="12" fill="url(#gStep)"/>
-      <text x="432" y="233" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">4</text>
-      <text x="452" y="232" font-size="12.5" font-weight="700" fill="#1e293b" font-family="system-ui">得到初始梯度公式</text>
-      <text x="424" y="254" font-size="11" fill="#475569" font-family="system-ui">∇J = E[ Σ ∇log π(aₜ|sₜ) · R(τ) ]</text>
-      <text x="424" y="274" font-size="10.5" fill="#94a3b8" font-family="system-ui">问题：R(τ) 包含过去奖励 → 方差大</text>
+      <rect x="40" y="361" width="620" height="72" rx="12" fill="url(#gCard)" stroke="#e2e8f0" stroke-width="1" filter="url(#ds)"/>
+      <circle cx="72" cy="397" r="16" fill="url(#gNum)"/>
+      <text x="72" y="402" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui">4</text>
+      <text x="100" y="389" font-size="12" font-weight="700" fill="#334155" font-family="system-ui,sans-serif">得到初始公式</text>
+      <text x="100" y="409" font-size="13" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">∇J = E[ Σₜ ∇log π(aₜ|sₜ) · R(τ) ]</text>
+      <text x="488" y="409" font-size="10.5" fill="#ef4444" font-weight="600" font-family="system-ui">⚠ R(τ) 含过去奖励，方差大</text>
 
-      <!-- arrow 4→5 -->
-      <line x1="600" y1="294" x2="600" y2="330" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowM)"/>
+      <!-- arrow -->
+      <line x1="350" y1="433" x2="350" y2="459" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
 
-      <!-- ===== Step 5 (highlight) ===== -->
-      <rect x="410" y="336" width="380" height="100" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
-      <circle cx="432" cy="358" r="12" fill="url(#gKey)"/>
-      <text x="432" y="363" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">5</text>
-      <text x="452" y="362" font-size="12.5" font-weight="700" fill="#92400e" font-family="system-ui">Reward-to-go：R(τ) → Gₜ ★</text>
-      <text x="424" y="384" font-size="11" fill="#78350f" font-family="system-ui">r₀…rₜ₋₁ 和 aₜ 无关（常数）</text>
-      <text x="424" y="404" font-size="11" fill="#78350f" font-family="system-ui">E[∇log π · c] = 0（概率归一化）</text>
-      <text x="424" y="424" font-size="10.5" fill="#b45309" font-family="system-ui">只剩 Gₜ — 方差更小！</text>
+      <!-- ===== Step 5 (star) ===== -->
+      <rect x="40" y="464" width="620" height="86" rx="12" fill="#fffbeb" stroke="#fbbf24" stroke-width="1.5" filter="url(#ds)"/>
+      <circle cx="72" cy="500" r="16" fill="url(#gStar)"/>
+      <text x="72" y="505" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui">5</text>
+      <text x="100" y="492" font-size="12" font-weight="700" fill="#92400e" font-family="system-ui,sans-serif">Reward-to-go ★  R(τ) → Gₜ</text>
+      <text x="100" y="512" font-size="12" fill="#78350f" font-family="system-ui,sans-serif">r₀…rₜ₋₁ 和 aₜ 无关 → E[∇logπ · c] = 0（Score Function Lemma）</text>
+      <text x="100" y="534" font-size="12" fill="#78350f" font-family="system-ui,sans-serif">过去奖励消掉，只剩未来回报 Gₜ → 方差更小</text>
 
-      <!-- ===== FINAL ===== -->
-      <path d="M 600 436 L 600 462 L 410 462 L 410 476" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowM)"/>
-      <rect x="30" y="206" width="350" height="88" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
-      <text x="205" y="234" text-anchor="middle" font-size="13" font-weight="700" fill="#1e40af" font-family="system-ui">最终公式</text>
-      <text x="205" y="258" text-anchor="middle" font-size="12" fill="#1e3a5f" font-family="system-ui">∇J = E[ Σₜ ∇log π(aₜ|sₜ) · Gₜ ]</text>
-      <text x="205" y="278" text-anchor="middle" font-size="10.5" fill="#64748b" font-family="system-ui">采 N 条轨迹取平均 ≈ 真实梯度</text>
+      <!-- arrow to final -->
+      <line x1="350" y1="550" x2="350" y2="578" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
 
-      <!-- bottom: two key insights -->
-      <rect x="30" y="336" width="350" height="100" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1" filter="url(#shadow)"/>
-      <text x="205" y="362" text-anchor="middle" font-size="12" font-weight="700" fill="#166534" font-family="system-ui">两个关键 trick</text>
-      <circle cx="56" cy="390" r="6" fill="#f59e0b"/>
-      <text x="70" y="394" font-size="11.5" fill="#14532d" font-family="system-ui">Log-Derivative：积分 → 期望 → 可采样</text>
-      <circle cx="56" cy="416" r="6" fill="#f59e0b"/>
-      <text x="70" y="420" font-size="11.5" fill="#14532d" font-family="system-ui">概率归一化：过去奖励期望为零 → 降方差</text>
-
-      <!-- connecting line from final box to key insights -->
-      <line x1="205" y1="294" x2="205" y2="336" stroke="#86efac" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <!-- ===== Final ===== -->
+      <rect x="40" y="583" width="620" height="76" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" filter="url(#ds)"/>
+      <rect x="40" y="583" width="6" height="76" rx="3" fill="url(#gFinal)"/>
+      <text x="70" y="610" font-size="13" font-weight="800" fill="#1e40af" font-family="system-ui,sans-serif">最终公式</text>
+      <text x="170" y="610" font-size="14" fill="#1e293b" font-family="'Times New Roman',serif" font-style="italic">∇J = E[ Σₜ ∇log π(aₜ|sₜ) · Gₜ ]</text>
+      <text x="70" y="640" font-size="11.5" fill="#475569" font-family="system-ui,sans-serif">采 N 条轨迹 → 每条算 ∇logπ · Gₜ → 取平均 ≈ 真实梯度（Monte Carlo 近似）</text>
     </svg>
 
     <div class="step-card">
@@ -1713,9 +1897,24 @@ LLM 训练范式
 <footer>
     <p><strong>推荐学习资源</strong></p>
     <p><a href="https://www.youtube.com/watch?v=2pWv7GOvuf0">David Silver RL 课程</a> · <a href="https://spinningup.openai.com/">OpenAI Spinning Up</a> · <a href="https://lilianweng.github.io/posts/2018-04-08-policy-gradient/">Lilian Weng 博客</a> · <a href="https://rail.eecs.berkeley.edu/deeprlcourse/">CS285 (UC Berkeley)</a></p>
-    <p style="margin-top: 12px; color: var(--gray-600);">RL Interview Quick Reference · 2025</p>
+    <p style="margin-top: 16px; color: var(--gray-600); font-size: 0.82rem;">RL Interview Quick Reference · 2025</p>
 </footer>
 
 </div>
+
+<script>
+// Reading progress & back-to-top
+(function(){
+    var bar = document.getElementById('readingProgress');
+    var btn = document.getElementById('backToTop');
+    window.addEventListener('scroll', function(){
+        var h = document.documentElement;
+        var pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+        bar.style.width = pct + '%';
+        if(h.scrollTop > 400) btn.classList.add('visible');
+        else btn.classList.remove('visible');
+    }, {passive:true});
+})();
+</script>
 </body>
 </html>
